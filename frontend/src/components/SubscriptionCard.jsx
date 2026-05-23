@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Plus, Check } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
+import { useLang, pickLocalized } from "../contexts/LanguageContext";
 import { toast } from "sonner";
 
 const TIER_LABEL = {
@@ -12,16 +13,15 @@ const TIER_LABEL = {
 export const SubscriptionCard = ({ sub }) => {
     const { add } = useCart();
     const { format } = useCurrency();
+    const { t, lang } = useLang();
 
     const [tier, setTier] = useState("five");
-    // Available durations for the currently selected tier
     const availableDurations = useMemo(
         () => sub.durations.filter((d) => d[tier] != null),
         [sub.durations, tier],
     );
     const [duration, setDuration] = useState(availableDurations[0]?.id);
 
-    // If user toggles tier and current duration not available, auto-pick first.
     useEffect(() => {
         if (!availableDurations.find((d) => d.id === duration)) {
             setDuration(availableDurations[0]?.id);
@@ -30,6 +30,10 @@ export const SubscriptionCard = ({ sub }) => {
 
     const dur = sub.durations.find((d) => d.id === duration) || availableDurations[0];
     const price = dur ? dur[tier] : null;
+
+    const subName = pickLocalized(sub, "name", lang);
+    const subTagline = pickLocalized(sub, "tagline", lang);
+    const durLabel = dur ? pickLocalized(dur, "label", lang) : "";
 
     const accentClasses =
         sub.accent === "red"
@@ -52,13 +56,13 @@ export const SubscriptionCard = ({ sub }) => {
         const item = {
             key: `sub-${sub.id}-${duration}-${tier}`,
             type: "subscription",
-            title: `${sub.name} — ${dur.label}`,
+            title: `${subName} — ${durLabel}`,
             subtitle: TIER_LABEL[tier],
             price,
         };
         add(item);
         setAdding(true);
-        toast.success("تمت الإضافة إلى السلة", {
+        toast.success(t("toast.addedToCart"), {
             description: `${item.title} (${item.subtitle})`,
         });
         setTimeout(() => setAdding(false), 1200);
@@ -74,34 +78,34 @@ export const SubscriptionCard = ({ sub }) => {
                 <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                         <h3 className="text-2xl font-bold text-[hsl(var(--brand-ink))]">
-                            {sub.name}
+                            {subName}
                         </h3>
                         <p className="text-sm text-[hsl(var(--brand-ink))]/65 mt-1">
-                            {sub.tagline}
+                            {subTagline}
                         </p>
                     </div>
                     <span
                         className={`text-[11px] font-semibold rounded-full border px-2.5 py-1 ${accentClasses.ribbon}`}
                     >
-                        {sub.id === "extra" ? "الأكثر طلباً" : "الأساسي"}
+                        {sub.id === "extra" ? t("card.mostRequested") : t("card.basic")}
                     </span>
                 </div>
 
                 {/* Tier selector */}
                 <div className="mb-4">
                     <div className="text-xs font-semibold text-[hsl(var(--brand-ink))]/60 mb-2">
-                        نوع الجهاز
+                        {t("card.device")}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                        {["five", "four"].map((t) => (
+                        {["five", "four"].map((tt) => (
                             <button
-                                key={t}
-                                onClick={() => setTier(t)}
-                                data-testid={`sub-${sub.id}-tier-${t}`}
-                                data-selected={tier === t}
+                                key={tt}
+                                onClick={() => setTier(tt)}
+                                data-testid={`sub-${sub.id}-tier-${tt}`}
+                                data-selected={tier === tt}
                                 className="tier-pill text-sm font-semibold rounded-xl border-2 border-[hsl(var(--brand-ink))]/15 h-11 transition-all"
                             >
-                                {TIER_LABEL[t]}
+                                {TIER_LABEL[tt]}
                             </button>
                         ))}
                     </div>
@@ -110,12 +114,13 @@ export const SubscriptionCard = ({ sub }) => {
                 {/* Duration selector */}
                 <div className="mb-5">
                     <div className="text-xs font-semibold text-[hsl(var(--brand-ink))]/60 mb-2">
-                        المدة
+                        {t("card.duration")}
                     </div>
                     <div className="space-y-2">
                         {sub.durations.map((d) => {
                             const isAvailable = d[tier] != null;
                             const selected = d.id === duration;
+                            const lbl = pickLocalized(d, "label", lang);
                             if (!isAvailable) {
                                 return (
                                     <div
@@ -124,10 +129,10 @@ export const SubscriptionCard = ({ sub }) => {
                                         className="w-full flex items-center justify-between rounded-xl border-2 border-dashed border-[hsl(var(--brand-ink))]/15 px-4 h-12 text-sm font-medium opacity-50"
                                     >
                                         <span className="text-[hsl(var(--brand-ink))]/60">
-                                            {d.label}
+                                            {lbl}
                                         </span>
                                         <span className="text-[hsl(var(--brand-ink))]/45 text-xs">
-                                            غير متوفر
+                                            {t("card.notAvailable")}
                                         </span>
                                     </div>
                                 );
@@ -144,10 +149,8 @@ export const SubscriptionCard = ({ sub }) => {
                                     }`}
                                 >
                                     <span className="flex items-center gap-2">
-                                        {selected && (
-                                            <Check className="w-4 h-4" />
-                                        )}
-                                        {d.label}
+                                        {selected && <Check className="w-4 h-4" />}
+                                        {lbl}
                                     </span>
                                     <span className="text-[hsl(var(--brand-ink))]/60 text-xs">
                                         {format(d[tier])}
@@ -161,7 +164,7 @@ export const SubscriptionCard = ({ sub }) => {
                 <div className="mt-auto pt-5 border-t border-[hsl(var(--brand-ink))]/10 flex items-end justify-between gap-3">
                     <div>
                         <div className="text-xs text-[hsl(var(--brand-ink))]/55 mb-0.5">
-                            السعر
+                            {t("card.price")}
                         </div>
                         <div
                             className={`text-3xl font-bold ${accentClasses.price}`}
@@ -178,11 +181,11 @@ export const SubscriptionCard = ({ sub }) => {
                     >
                         {adding ? (
                             <>
-                                <Check className="w-4 h-4" /> أُضيف
+                                <Check className="w-4 h-4" /> {t("card.added")}
                             </>
                         ) : (
                             <>
-                                <Plus className="w-4 h-4" /> إضافة
+                                <Plus className="w-4 h-4" /> {t("card.add")}
                             </>
                         )}
                     </button>

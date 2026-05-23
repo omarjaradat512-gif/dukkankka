@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { TrendingDown, Calculator } from "lucide-react";
-import { SUBSCRIPTIONS } from "../data/products";
+import { useStoreData } from "../contexts/DataContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 
 const TIER_LABEL = { four: "PS4", five: "PS5" };
 
 export const SavingsCalculator = () => {
     const { format } = useCurrency();
+    const { subscriptions: SUBSCRIPTIONS } = useStoreData();
     const [subId, setSubId] = useState("extra");
     const [tier, setTier] = useState("five");
 

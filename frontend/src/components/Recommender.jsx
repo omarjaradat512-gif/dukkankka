@@ -12,7 +12,7 @@ import {
 import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
-import { SUBSCRIPTIONS, GAMES } from "../data/products";
+import { useStoreData } from "../contexts/DataContext";
 import { GAME_DETAILS } from "../data/gameDetails";
 import { toast } from "sonner";
 
@@ -70,7 +70,7 @@ const GENRE_TO_GAMES = {
     rpg: ["elden-ring", "horizon-fw", "ghost-tsushima", "rdr2"],
 };
 
-const buildRecommendation = ({ genre, time, budget }) => {
+const buildRecommendation = ({ genre, time, budget }, SUBSCRIPTIONS, GAMES) => {
     // Pick game from genre — prefer available + PS5 priced + best seller
     const candidates = (GENRE_TO_GAMES[genre] || GENRE_TO_GAMES.action)
         .map((id) => GAMES.find((g) => g.id === id))
@@ -140,6 +140,7 @@ const buildRecommendation = ({ genre, time, budget }) => {
 const RecommenderModal = ({ open, onClose }) => {
     const { add } = useCart();
     const { format } = useCurrency();
+    const { subscriptions: SUBSCRIPTIONS, games: GAMES } = useStoreData();
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({});
     const [done, setDone] = useState(false);
@@ -150,10 +151,10 @@ const RecommenderModal = ({ open, onClose }) => {
         setDone(false);
     };
 
-    const rec = useMemo(() => (done ? buildRecommendation(answers) : null), [
-        done,
-        answers,
-    ]);
+    const rec = useMemo(
+        () => (done ? buildRecommendation(answers, SUBSCRIPTIONS, GAMES) : null),
+        [done, answers, SUBSCRIPTIONS, GAMES],
+    );
 
     if (!open) return null;
 

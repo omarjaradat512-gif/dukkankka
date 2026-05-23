@@ -1,14 +1,15 @@
 import { Sparkles, Zap, BadgeCheck, MessageCircle, Tag } from "lucide-react";
-
-const items = [
-    { icon: Zap, label: "تسليم فوري" },
-    { icon: BadgeCheck, label: "حسابات أصلية" },
-    { icon: MessageCircle, label: "دعم على واتساب" },
-    { icon: Tag, label: "أسعار تنافسية" },
-    { icon: Sparkles, label: "تحديث مستمر للكتالوج" },
-];
+import { useLang } from "../contexts/LanguageContext";
 
 export const Ticker = () => {
+    const { t } = useLang();
+    const items = [
+        { icon: Zap, label: t("ticker.instant") },
+        { icon: BadgeCheck, label: t("ticker.original") },
+        { icon: MessageCircle, label: t("ticker.support") },
+        { icon: Tag, label: t("ticker.prices") },
+        { icon: Sparkles, label: t("ticker.updates") },
+    ];
     const loop = [...items, ...items, ...items];
     return (
         <div className="bg-[hsl(var(--brand-ink))] text-[hsl(var(--brand-cream))] py-3 overflow-hidden border-y border-[hsl(var(--brand-cream))]/10">

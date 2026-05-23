@@ -13,10 +13,10 @@ import {
     Gamepad2,
     Share2,
 } from "lucide-react";
-import { GAMES, STORE } from "../data/products";
 import { GAME_DETAILS } from "../data/gameDetails";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
+import { useStoreData } from "../contexts/DataContext";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
@@ -27,6 +27,7 @@ const TIER_LABEL = { four: "PS4 (Four)", five: "PS5 (Five)" };
 export default function GameDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { games: GAMES, store: STORE } = useStoreData();
     const game = GAMES.find((g) => g.id === id);
     const details = GAME_DETAILS[id] || {};
     const { add } = useCart();

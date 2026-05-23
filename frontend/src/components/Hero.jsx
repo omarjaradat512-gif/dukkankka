@@ -1,7 +1,13 @@
-import { ArrowLeft, BadgeCheck, Zap, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Zap, MessageCircle } from "lucide-react";
 import { quickInquiry } from "../lib/whatsapp";
+import { useLang, pickLocalized } from "../contexts/LanguageContext";
+import { useStoreData } from "../contexts/DataContext";
 
 export const Hero = () => {
+    const { t, isRTL, lang } = useLang();
+    const { store } = useStoreData();
+    const storeName = pickLocalized(store, "name", lang);
+    const Arrow = isRTL ? ArrowLeft : ArrowRight;
     return (
         <section
             id="top"
@@ -15,22 +21,21 @@ export const Hero = () => {
                 <div className="rise">
                     <div className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--brand-blue))]/15 border border-[hsl(var(--brand-blue))]/30 px-3 py-1.5 text-xs sm:text-sm font-semibold text-[hsl(var(--brand-blue-deep))] mb-6">
                         <BadgeCheck className="w-4 h-4" />
-                        متجر موثوق • تسليم فوري
+                        {t("hero.badge")}
                     </div>
 
                     <h1
                         className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] text-[hsl(var(--brand-ink))]"
                         data-testid="hero-title"
                     >
-                        <span className="block">اشتراكاتك وألعابك</span>
+                        <span className="block">{t("hero.title.line1")}</span>
                         <span className="block text-[hsl(var(--brand-red))]">
-                            على بُعد رسالة واتساب.
+                            {t("hero.title.line2")}
                         </span>
                     </h1>
 
                     <p className="mt-6 text-base sm:text-lg text-[hsl(var(--brand-ink))]/70 max-w-xl leading-relaxed">
-                        تصفّح الكتالوج، اختر اللي يناسبك، وابعت طلبك مباشرة على
-                        واتساب.
+                        {t("hero.subtitle")}
                     </p>
 
                     <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -39,26 +44,24 @@ export const Hero = () => {
                             data-testid="hero-cta-browse"
                             className="inline-flex items-center gap-2 rounded-full px-6 h-12 bg-[hsl(var(--brand-ink))] text-[hsl(var(--brand-cream))] text-sm font-semibold hover:bg-[hsl(var(--brand-blue-deep))] transition-colors"
                         >
-                            تصفّح المنتجات
-                            <ArrowLeft className="w-4 h-4" />
+                            {t("hero.cta.browse")}
+                            <Arrow className="w-4 h-4" />
                         </a>
                         <button
-                            onClick={() =>
-                                quickInquiry("الاستفسار العام عن المتجر")
-                            }
+                            onClick={() => quickInquiry(t("hero.cta.whatsapp"), store)}
                             data-testid="hero-cta-whatsapp"
                             className="inline-flex items-center gap-2 rounded-full px-6 h-12 bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1DA851] transition-colors"
                         >
                             <MessageCircle className="w-4 h-4 wa-pulse" />
-                            راسلنا على واتساب
+                            {t("hero.cta.whatsapp")}
                         </button>
                     </div>
 
                     <div className="mt-10 grid grid-cols-3 gap-3 max-w-lg">
                         {[
-                            { icon: Zap, label: "تسليم فوري" },
-                            { icon: BadgeCheck, label: "حسابات أصلية" },
-                            { icon: MessageCircle, label: "دعم مباشر" },
+                            { icon: Zap, label: t("hero.benefit.instant") },
+                            { icon: BadgeCheck, label: t("hero.benefit.original") },
+                            { icon: MessageCircle, label: t("hero.benefit.support") },
                         ].map((b, i) => (
                             <div
                                 key={i}
@@ -81,12 +84,12 @@ export const Hero = () => {
                         <div className="absolute -bottom-10 -right-10 w-56 h-56 keffiyeh-pattern opacity-30 -rotate-12" />
                         <img
                             src="/logo.png"
-                            alt="شعار دُكانك"
+                            alt={storeName}
                             className="relative w-full max-w-sm mx-auto drop-shadow-2xl"
                         />
                         <div className="relative mt-6 text-center">
                             <div className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--brand-cream))]/95 px-4 py-2 text-sm font-bold text-[hsl(var(--brand-blue-deep))]">
-                                دُكانك • Dakanak
+                                {storeName} • Dukkank
                             </div>
                         </div>
                     </div>

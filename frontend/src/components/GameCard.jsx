@@ -3,6 +3,8 @@ import { Plus, Check, Share2, Gamepad2, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
+import { useLang } from "../contexts/LanguageContext";
+import { useStoreData } from "../contexts/DataContext";
 import { toast } from "sonner";
 
 const TIER_LABEL = {
@@ -13,6 +15,8 @@ const TIER_LABEL = {
 export const GameCard = ({ game }) => {
     const { add } = useCart();
     const { format } = useCurrency();
+    const { t, lang } = useLang();
+    const { store } = useStoreData();
     const isAvailable = game.available !== false; // default true if missing
     const availableTiers = ["five", "four"].filter((t) => game[t] != null);
     const hasPrice = availableTiers.length > 0;
@@ -38,7 +42,7 @@ export const GameCard = ({ game }) => {
         };
         add(item);
         setAdding(true);
-        toast.success("تمت إضافة اللعبة إلى السلة", {
+        toast.success(t("toast.gameAddedToCart"), {
             description: `${game.name} (${TIER_LABEL[tier]})`,
         });
         setTimeout(() => setAdding(false), 1200);
@@ -50,31 +54,31 @@ export const GameCard = ({ game }) => {
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: `${game.name} — دُكانك`,
-                    text: `شوف هاي اللعبة على متجر دُكانك`,
+                    title: `${game.name} — ${store?.name || ""}`,
+                    text: lang === "ar" ? `شوف هاي اللعبة على متجر ${store?.name || ""}` : `Check out this game on ${store?.name || ""}`,
                     url,
                 });
                 return;
             }
             await navigator.clipboard.writeText(url);
             setCopied(true);
-            toast.success("تم نسخ رابط المنتج", {
-                description: "شاركه مع أصحابك على واتساب أو وسائل التواصل.",
+            toast.success(t("toast.linkCopied"), {
+                description: t("toast.linkCopiedDesc"),
             });
             setTimeout(() => setCopied(false), 1800);
         } catch {
-            toast.error("ما قدرنا ننسخ الرابط، حاول مرة ثانية");
+            toast.error(t("toast.copyFailed"));
         }
     };
 
     const showImage = game.image && !imgError;
     const platformLabel = !hasPrice
-        ? "قريباً"
+        ? t("card.comingSoon")
         : availableTiers.length === 2
           ? "PS4 / PS5"
           : availableTiers[0] === "five"
-            ? "PS5 فقط"
-            : "PS4 فقط";
+            ? t("card.ps5Only")
+            : t("card.ps4Only");
 
     return (
         <article
@@ -122,7 +126,7 @@ export const GameCard = ({ game }) => {
                             className="rounded-full bg-[hsl(var(--brand-red))] text-white text-sm font-extrabold px-5 py-2 shadow-2xl rotate-[-6deg] border-2 border-white/20"
                             data-testid={`game-${game.id}-out-of-stock`}
                         >
-                            غير متوفرة حالياً
+                            {t("card.outOfStock")}
                         </span>
                     </div>
                 )}
@@ -133,7 +137,7 @@ export const GameCard = ({ game }) => {
 
                 {isAvailable && !hasPrice && (
                     <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--brand-red))] px-3 py-1 text-[11px] font-bold text-[hsl(var(--brand-cream))] uppercase tracking-wider pointer-events-none z-[3]">
-                        السعر قريباً
+                        {t("card.priceSoon")}
                     </div>
                 )}
 
@@ -147,26 +151,26 @@ export const GameCard = ({ game }) => {
                         }}
                     >
                         <i className="fa-solid fa-fire text-[10px]" />
-                        الأكثر مبيعاً
+                        {t("card.bestSeller")}
                     </div>
                 )}
 
                 {/* Share button */}
                 <button
                     onClick={handleCopyLink}
-                    aria-label="نسخ رابط المنتج"
+                    aria-label={t("card.share")}
                     data-testid={`game-${game.id}-share-button`}
                     className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 hover:bg-white text-[hsl(var(--brand-ink))] px-3 py-1.5 text-[11px] font-semibold transition-colors backdrop-blur shadow-md z-[4]"
                 >
                     {copied ? (
                         <>
                             <Check className="w-3.5 h-3.5 text-[hsl(var(--brand-red))]" />
-                            نُسخ
+                            {t("card.copied")}
                         </>
                     ) : (
                         <>
                             <Share2 className="w-3.5 h-3.5" />
-                            مشاركة
+                            {t("card.share")}
                         </>
                     )}
                 </button>
@@ -213,14 +217,14 @@ export const GameCard = ({ game }) => {
                 <div className="mt-5 pt-4 border-t border-[hsl(var(--brand-ink))]/10 flex items-end justify-between gap-3">
                     <div>
                         <div className="text-xs text-[hsl(var(--brand-ink))]/55">
-                            السعر
+                            {t("card.price")}
                         </div>
                         {!isAvailable ? (
                             <div
                                 className="text-base font-bold text-[hsl(var(--brand-red))]/80"
                                 data-testid={`game-${game.id}-price`}
                             >
-                                غير متوفرة
+                                {t("card.unavailable")}
                             </div>
                         ) : hasPrice && price != null ? (
                             <div
@@ -234,14 +238,14 @@ export const GameCard = ({ game }) => {
                                 className="text-base font-bold text-[hsl(var(--brand-ink))]/40"
                                 data-testid={`game-${game.id}-price`}
                             >
-                                قريباً
+                                {t("card.comingSoon")}
                             </div>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Link
                             to={`/game/${game.id}`}
-                            aria-label="تفاصيل اللعبة"
+                            aria-label="details"
                             data-testid={`game-${game.id}-details-link`}
                             className="hidden sm:inline-flex items-center justify-center w-10 h-10 rounded-full border border-[hsl(var(--brand-ink))]/15 text-[hsl(var(--brand-ink))]/70 hover:bg-[hsl(var(--brand-cream))] hover:text-[hsl(var(--brand-ink))] transition-colors"
                         >
@@ -255,11 +259,11 @@ export const GameCard = ({ game }) => {
                         >
                             {adding ? (
                                 <>
-                                    <Check className="w-4 h-4" /> أُضيف
+                                    <Check className="w-4 h-4" /> {t("card.added")}
                                 </>
                             ) : (
                                 <>
-                                    <Plus className="w-4 h-4" /> إضافة
+                                    <Plus className="w-4 h-4" /> {t("card.add")}
                                 </>
                             )}
                         </button>

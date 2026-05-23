@@ -8,32 +8,36 @@ import {
 import { Plus, Minus, Trash2, MessageCircle, ShoppingBag } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
+import { useLang } from "../contexts/LanguageContext";
+import { useStoreData } from "../contexts/DataContext";
 import { buildOrderMessage, openWhatsApp } from "../lib/whatsapp";
 
 export const CartDrawer = ({ open, onOpenChange }) => {
     const { items, totalPrice, totalQty, inc, dec, remove, clear } = useCart();
     const { format, code } = useCurrency();
+    const { t, isRTL } = useLang();
+    const { store } = useStoreData();
 
     const handleCheckout = () => {
         if (items.length === 0) return;
-        const msg = buildOrderMessage(items, format, code);
-        openWhatsApp(msg);
+        const msg = buildOrderMessage(items, format, code, store);
+        openWhatsApp(msg, store);
     };
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
-                side="left"
+                side={isRTL ? "left" : "right"}
                 className="w-full sm:max-w-md bg-[hsl(var(--brand-cream))] border-l-0 flex flex-col p-0"
                 data-testid="cart-drawer"
             >
-                <SheetHeader className="px-6 pt-6 pb-4 border-b border-[hsl(var(--brand-ink))]/10 text-right">
+                <SheetHeader className={`px-6 pt-6 pb-4 border-b border-[hsl(var(--brand-ink))]/10 ${isRTL ? "text-right" : "text-left"}`}>
                     <SheetTitle className="text-2xl font-bold flex items-center gap-2 text-[hsl(var(--brand-ink))]">
                         <ShoppingBag className="w-6 h-6" />
-                        سلتك ({totalQty})
+                        {t("cart.title")} ({totalQty})
                     </SheetTitle>
                     <SheetDescription className="text-[hsl(var(--brand-ink))]/65">
-                        راجع طلبك ثم تابع الإرسال عبر واتساب.
+                        {t("cart.emptyDesc")}
                     </SheetDescription>
                 </SheetHeader>
 
@@ -47,10 +51,10 @@ export const CartDrawer = ({ open, onOpenChange }) => {
                                 <ShoppingBag className="w-9 h-9 text-[hsl(var(--brand-blue-deep))]" />
                             </div>
                             <h3 className="text-lg font-bold text-[hsl(var(--brand-ink))]">
-                                السلة فارغة
+                                {t("cart.empty")}
                             </h3>
                             <p className="text-sm text-[hsl(var(--brand-ink))]/60 mt-1">
-                                أضف منتجاتك المفضلة وابدأ الطلب.
+                                {t("cart.emptyDesc")}
                             </p>
                         </div>
                     )}
@@ -114,7 +118,7 @@ export const CartDrawer = ({ open, onOpenChange }) => {
                     <div className="border-t border-[hsl(var(--brand-ink))]/10 px-6 py-5 bg-white/70 backdrop-blur space-y-4">
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-[hsl(var(--brand-ink))]/65">
-                                الإجمالي
+                                {t("cart.total")}
                             </span>
                             <span
                                 className="text-2xl font-bold text-[hsl(var(--brand-ink))]"
@@ -124,21 +128,13 @@ export const CartDrawer = ({ open, onOpenChange }) => {
                             </span>
                         </div>
 
-                        <div className="rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 p-3 text-xs sm:text-sm text-[hsl(var(--brand-ink))]/85 leading-relaxed">
-                            <strong className="text-[#1DA851]">
-                                للطلب عبر واتساب
-                            </strong>
-                            : عند الضغط، راح يفتح واتساب مباشرة مع تفاصيل طلبك
-                            جاهزة لإرسالها.
-                        </div>
-
                         <button
                             onClick={handleCheckout}
                             data-testid="checkout-whatsapp-button"
                             className="w-full inline-flex items-center justify-center gap-2 rounded-full h-13 py-3.5 bg-[#25D366] text-white font-bold text-base hover:bg-[#1DA851] transition-colors"
                         >
                             <MessageCircle className="w-5 h-5 wa-pulse" />
-                            تابع الطلب عبر واتساب
+                            {t("cart.checkout")}
                         </button>
 
                         <button
@@ -146,7 +142,7 @@ export const CartDrawer = ({ open, onOpenChange }) => {
                             data-testid="clear-cart-button"
                             className="w-full text-xs text-[hsl(var(--brand-ink))]/50 hover:text-[hsl(var(--brand-red))] transition-colors"
                         >
-                            تفريغ السلة
+                            {t("cart.clear")}
                         </button>
                     </div>
                 )}

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
-import { SUBSCRIPTIONS, GAMES } from "../data/products";
+import { useStoreData } from "../contexts/DataContext";
 import { toast } from "sonner";
 
 const TIER_LABEL = { four: "PS4", five: "PS5" };
@@ -65,6 +65,7 @@ const Chip = ({ selected, onClick, disabled, testId, children }) => (
 export const BundleBuilder = () => {
     const { add } = useCart();
     const { format } = useCurrency();
+    const { subscriptions: SUBSCRIPTIONS, games: GAMES } = useStoreData();
     const [tier, setTier] = useState("five");
     const [subId, setSubId] = useState(null); // null = no subscription picked
     const [subDur, setSubDur] = useState("ext-3m"); // default duration

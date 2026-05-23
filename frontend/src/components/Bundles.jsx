@@ -2,22 +2,27 @@ import { useState } from "react";
 import { Plus, Check, Sparkles, Package } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
-import { BUNDLES, SUBSCRIPTIONS, GAMES } from "../data/products";
+import { useStoreData } from "../contexts/DataContext";
+import { useLang, pickLocalized } from "../contexts/LanguageContext";
 import { toast } from "sonner";
 
 const TIER_LABEL = { four: "PS4 (Four)", five: "PS5 (Five)" };
 
-const BundleCard = ({ bundle }) => {
+const BundleCard = ({ bundle, subscriptions, games }) => {
     const { add } = useCart();
     const { format } = useCurrency();
+    const { t, lang } = useLang();
     const [adding, setAdding] = useState(false);
     const [imgError, setImgError] = useState(false);
 
-    const sub = SUBSCRIPTIONS.find((s) => s.id === bundle.subId);
+    const sub = subscriptions.find((s) => s.id === bundle.subId);
     const dur = sub?.durations.find((d) => d.id === bundle.durationId);
-    const game = GAMES.find((g) => g.id === bundle.gameId);
+    const game = games.find((g) => g.id === bundle.gameId);
 
     if (!sub || !dur || !game) return null;
+
+    const subName = pickLocalized(sub, "name", lang);
+    const durLabel = pickLocalized(dur, "label", lang);
 
     const subPrice = dur[bundle.tier];
     const gamePrice = game[bundle.tier];
@@ -35,13 +40,13 @@ const BundleCard = ({ bundle }) => {
         add({
             key: `bundle-${bundle.id}`,
             type: "bundle",
-            title: `${sub.name} (${dur.label}) + ${game.name}`,
-            subtitle: `${TIER_LABEL[bundle.tier]} — باقة موفّرة`,
+            title: `${subName} (${durLabel}) + ${game.name}`,
+            subtitle: `${TIER_LABEL[bundle.tier]} — ${lang === "ar" ? "باقة موفّرة" : "Saver bundle"}`,
             price: bundle.bundlePrice,
         });
         setAdding(true);
-        toast.success("تمت إضافة الباقة إلى السلة", {
-            description: `وفّرت ${format(saved)} (${percent}%) 🎉`,
+        toast.success(lang === "ar" ? "تمت إضافة الباقة إلى السلة" : "Bundle added to cart", {
+            description: `${lang === "ar" ? "وفّرت" : "You saved"} ${format(saved)} (${percent}%) 🎉`,
         });
         setTimeout(() => setAdding(false), 1400);
     };
@@ -79,7 +84,7 @@ const BundleCard = ({ bundle }) => {
                     }}
                 >
                     <Sparkles className="w-3.5 h-3.5" />
-                    وفّر {percent}%
+                    {lang === "ar" ? `وفّر ${percent}%` : `Save ${percent}%`}
                 </div>
 
                 <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md px-3 py-1 text-[11px] font-semibold text-white">
@@ -88,7 +93,7 @@ const BundleCard = ({ bundle }) => {
 
                 <div className="absolute bottom-3 right-3 left-3">
                     <div className="text-[11px] uppercase tracking-wider text-white/70 font-bold">
-                        باقة موفّرة
+                        {lang === "ar" ? "باقة موفّرة" : "Saver bundle"}
                     </div>
                     <div
                         className="text-white text-lg sm:text-xl font-extrabold leading-tight latin-tight"
@@ -105,7 +110,7 @@ const BundleCard = ({ bundle }) => {
                     <li className="flex items-center justify-between text-sm">
                         <span className="flex items-center gap-2 text-[hsl(var(--brand-ink))]/80">
                             <Check className="w-4 h-4 text-[hsl(var(--brand-blue-deep))]" />
-                            {sub.name} ({dur.label})
+                            {subName} ({durLabel})
                         </span>
                         <span className="text-[hsl(var(--brand-ink))]/50 text-xs">
                             {format(subPrice)}
@@ -147,11 +152,11 @@ const BundleCard = ({ bundle }) => {
                     >
                         {adding ? (
                             <>
-                                <Check className="w-4 h-4" /> أُضيف
+                                <Check className="w-4 h-4" /> {t("card.added")}
                             </>
                         ) : (
                             <>
-                                <Plus className="w-4 h-4" /> أضف الباقة
+                                <Plus className="w-4 h-4" /> {lang === "ar" ? "أضف الباقة" : "Add bundle"}
                             </>
                         )}
                     </button>
@@ -162,7 +167,9 @@ const BundleCard = ({ bundle }) => {
 };
 
 export const Bundles = () => {
-    if (!BUNDLES?.length) return null;
+    const { bundles, subscriptions, games } = useStoreData();
+    const { t, lang } = useLang();
+    if (!bundles?.length) return null;
     return (
         <section
             id="bundles"
@@ -173,20 +180,19 @@ export const Bundles = () => {
                 <div className="mb-10 max-w-3xl">
                     <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] mb-3 text-[hsl(var(--brand-red))]">
                         <Package className="w-4 h-4" />
-                        باقات مدمجة
+                        {t("section.bundles")}
                     </div>
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[hsl(var(--brand-ink))] leading-tight">
-                        خذ اشتراك + لعبة بسعر أقل
+                        {lang === "ar" ? "خذ اشتراك + لعبة بسعر أقل" : "Get a subscription + game at a better price"}
                     </h2>
                     <p className="mt-3 text-base sm:text-lg text-[hsl(var(--brand-ink))]/70 leading-relaxed">
-                        باقات مختارة بسعر مدمج يوفّر عليك ٪١٠ أو أكثر مقارنة
-                        بالشراء المنفصل.
+                        {t("section.bundlesDesc")}
                     </p>
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 stagger">
-                    {BUNDLES.map((b) => (
-                        <BundleCard key={b.id} bundle={b} />
+                    {bundles.map((b) => (
+                        <BundleCard key={b.id} bundle={b} subscriptions={subscriptions} games={games} />
                     ))}
                 </div>
             </div>

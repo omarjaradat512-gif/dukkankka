@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { X, GitCompareArrows, Plus, Check, Search, Trash2 } from "lucide-react";
-import { GAMES } from "../data/products";
+import { useStoreData } from "../contexts/DataContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 
 const MAX = 3;
@@ -25,6 +25,7 @@ const PriceCell = ({ value, available, format }) => {
 
 const GameCompareModal = ({ open, onClose }) => {
     const { format } = useCurrency();
+    const { games: GAMES } = useStoreData();
     const [selectedIds, setSelectedIds] = useState([]);
     const [query, setQuery] = useState("");
 

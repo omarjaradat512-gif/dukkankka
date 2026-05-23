@@ -1,17 +1,18 @@
-import { STORE } from "../data/products";
+import { STORE as FALLBACK_STORE } from "../data/products";
 
 // Legacy helper kept for non-currency usages.
 const fmtPriceUSD = (n) =>
     Number.isInteger(n) ? `${n}$` : `${n.toFixed(2).replace(/\.00$/, "")}$`;
 
-export function buildOrderMessage(items, format, currencyCode) {
+export function buildOrderMessage(items, format, currencyCode, store = FALLBACK_STORE) {
+    const s = store || FALLBACK_STORE;
     if (!items || items.length === 0) {
-        return "السلام عليكم 👋\nأود الاستفسار عن منتجات متجر دُكانك.";
+        return `السلام عليكم 👋\nأود الاستفسار عن منتجات متجر ${s.name}.`;
     }
     const fmt = format || fmtPriceUSD;
     const lines = [
         "السلام عليكم 👋",
-        `أرغب بطلب من متجر *${STORE.name}*:`,
+        `أرغب بطلب من متجر *${s.name}*:`,
         "",
     ];
     let total = 0;
@@ -34,14 +35,16 @@ export function buildOrderMessage(items, format, currencyCode) {
     return lines.join("\n");
 }
 
-export function openWhatsApp(message) {
-    const url = `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(message)}`;
+export function openWhatsApp(message, store = FALLBACK_STORE) {
+    const s = store || FALLBACK_STORE;
+    const url = `https://wa.me/${s.whatsapp}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
 }
 
-export function quickInquiry(productLine) {
-    const msg = `السلام عليكم 👋\nأود الاستفسار عن: ${productLine} من متجر *${STORE.name}*.`;
-    openWhatsApp(msg);
+export function quickInquiry(productLine, store = FALLBACK_STORE) {
+    const s = store || FALLBACK_STORE;
+    const msg = `السلام عليكم 👋\nأود الاستفسار عن: ${productLine} من متجر *${s.name}*.`;
+    openWhatsApp(msg, s);
 }
 
 export { fmtPriceUSD };
