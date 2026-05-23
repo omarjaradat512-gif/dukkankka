@@ -1,74 +1,67 @@
-# PRD — دُكانك (Dakanak)
+# PRD — دُكانك (Dukkank)
 
 ## Original Problem Statement
-عميل عنده متجر على إنستغرام يريد موقع إلكتروني لعرض المنتجات والأسعار بدون بوابة دفع — عند الضغط على زر الدفع، يتم تحويل العميل إلى واتساب مع تفاصيل طلبه. النشر على Netlify (drag & drop). اسم المتجر: دُكانك. واتساب: 0775585112 (الأردن). يبيع اشتراكات PS Plus (Essential / Extra) وألعاب PS4/PS5. الأسعار المعطاة + 10$ على كل سعر.
+موقع متجر اشتراكات وألعاب رقمية. الطلبات في هذه الجولة:
+1. **لوحة إدارة (Admin Panel)** لإدارة المنتجات بدون تعديل الكود.
+2. **دعم اللغة الإنجليزية** (عربي افتراضي + زر تبديل EN/AR).
+3. ~~Google Analytics~~ (تم تجاهلها بناءً على طلب المستخدم).
+4. ~~تحسينات تصميمية~~ (تم تجاهلها بناءً على طلب المستخدم).
 
 ## Architecture
-- **Frontend only** — React (CRA) + Tailwind + shadcn/ui + lucide-react + sonner.
-- **No backend / database** — منتجات ثابتة في `frontend/src/data/products.js`.
-- **Cart** محفوظة في LocalStorage.
-- **Checkout** عبر `https://wa.me/962775585112?text=…`.
-- **Deploy target**: Netlify static (folder `frontend/build`).
+- **Backend** — FastAPI + Motor (async MongoDB). JWT-based auth with bcrypt password hashing.
+- **Frontend** — React (CRA) + Tailwind + shadcn/ui + react-router-dom v7.
+- **Data** — Products/Subscriptions/Bundles/Store config all in MongoDB collections, seeded on first startup from `backend/initial_data.py`. Frontend fetches via `/api/store`, `/api/subscriptions`, `/api/games`, `/api/bundles` and falls back to static products.js while loading.
+- **Auth** — Bearer token (24h JWT) in `localStorage` key `dukkank_admin_token`. Admin user seeded from `ADMIN_EMAIL`/`ADMIN_PASSWORD` env vars on startup; password auto-syncs if env changes.
+- **Checkout** still WhatsApp deep-link via `wa.me/<whatsapp>?text=<order>`.
 
 ## User Personas
-- **مالك المتجر**: يدير المنتجات بتعديل ملف `products.js` فقط.
-- **العميل**: يتصفح، يضيف للسلة، يبعت الطلب على واتساب.
+- **Admin (store owner)**: login at `/admin/login`, manages everything from `/admin`.
+- **Customer**: browses, picks language (AR/EN), adds to cart, checks out via WhatsApp.
 
 ## Core Requirements (static)
-- عرض جميع المنتجات بأسعار شفافة (السعر شامل +10$).
-- اختيار PS4/PS5 ومدة الاشتراك.
-- سلة بقابلية زيادة/نقصان/حذف.
-- زر دفع → فتح واتساب مع رسالة طلب جاهزة.
-- تصميم RTL عربي بالكامل، مستوحى من شعار الكوفية.
+- Browse subscriptions + games with PS4/PS5 pricing.
+- Local cart, WhatsApp checkout.
+- Arabic RTL by default, English LTR toggle.
+- Admin can fully manage store settings, subscriptions, games, bundles.
 
-## Implemented (2026-02-25)
-- ✅ هيكلة الـ React app كاملة (App.js + 7 components + context + lib).
-- ✅ Header مع شعار + ناف + عداد سلة.
-- ✅ Hero مع شعار + CTAs.
-- ✅ Ticker متحرك للضمانات.
-- ✅ قسم Essential وExtra مع بطاقات اختيار PS4/PS5 ومدة الاشتراك.
-- ✅ قسم الألعاب مع 8 ألعاب وغلاف متدرج لكل واحدة.
-- ✅ Cart Drawer (Sheet) مع تحكم بالكميات وزر Checkout يفتح واتساب.
-- ✅ Floating WhatsApp button + Footer كامل بمعلومات التواصل.
-- ✅ Toast notifications عند الإضافة للسلة.
-- ✅ ملف `netlify.toml` جاهز للنشر.
-- ✅ خط Cairo (للعناوين) + Tajawal (للنص) — يعرض العربية بشكل ممتاز.
-- ✅ ثيم مستوحى من ألوان الشعار: أزرق فولاذي + أحمر القماش + كريمي.
+## Implemented (2026-05-23)
+### Backend (FastAPI + MongoDB)
+- ✅ `POST /api/auth/login`, `GET /api/auth/me` (JWT HS256, 24h expiry, bcrypt)
+- ✅ Admin seeding from env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) — idempotent, updates hash if env changes.
+- ✅ Public reads: `/api/store`, `/api/subscriptions`, `/api/games`, `/api/bundles`.
+- ✅ Admin CRUD: `PUT /api/admin/store`; `POST/PUT/DELETE /api/admin/{subscriptions,games,bundles}/:id`.
+- ✅ Initial seed migrates the original `products.js` content (1 store config, 2 subs, 22 games, 4 bundles).
+- ✅ Unique indexes on `users.email`, `subscriptions.id`, `games.id`, `bundles.id`.
 
-## Backlog — P1 (suggested)
-- [ ] قسم "أحدث الإضافات" / "الأكثر طلباً" بشارة بصرية.
-- [ ] بحث/فلترة في قسم الألعاب لما يكبر الكتالوج.
-- [ ] دعم لغة إنجليزية (toggle).
-- [ ] لوحة إدارة بسيطة (admin panel) لإضافة/تعديل المنتجات بدون تعديل الكود.
-- [ ] تحليلات بسيطة (Google Analytics / Plausible).
+### Frontend
+- ✅ **i18n**: `LanguageContext` (ar/en) + `translations.js` dictionary. Toggle button in Header. `<html dir>` updates dynamically.
+- ✅ **DataContext** — replaces static imports across 10 files; loads from API, falls back to bundled static data while loading.
+- ✅ **AuthContext** — Bearer-token auth; on mount validates token via `/auth/me`.
+- ✅ **Admin pages**: `/admin/login` (form, error display) and `/admin` (Tabs: Store / Subscriptions / Games / Bundles).
+- ✅ **Store Settings tab**: name (AR/EN), tagline (AR/EN), whatsapp number, instagram link.
+- ✅ **Subscriptions tab**: edit each sub's name/tagline (AR/EN) + each duration's label + PS4/PS5 prices.
+- ✅ **Games tab**: search, add new game (full editor), edit, quick toggle available, delete.
+- ✅ **Bundles tab**: add/edit/delete bundles with dropdowns for sub/duration/game/tier.
+- ✅ Translated UI strings: Header nav, Hero, Ticker, Section headers, Subscription/Game cards, Cart drawer, Footer, custom-game CTA.
+
+## Backend Test Suite
+- ✅ `/app/backend/tests/backend_test.py` — 18 pytest cases (auth, public, admin CRUD), 18/18 pass.
+
+## Test Credentials
+- `/app/memory/test_credentials.md` — admin@dukkank.com / omar512@@OoD
+
+## Backlog — P1
+- [ ] Add `data-testid` attributes to admin tab elements for E2E test reliability.
+- [ ] Add image upload (instead of typing image URL) — would need file storage.
+- [ ] Reorder games via drag-and-drop (currently order = insertion order).
+- [ ] Translate the remaining Arabic-heavy sections (FAQ, Reviews, Recommender quiz, Bundle Builder content) to English.
 
 ## Backlog — P2
-- [ ] صفحة تفاصيل لكل لعبة (سكرين شوت + وصف موسّع).
-- [ ] قسم آراء العملاء (Testimonials).
-- [ ] دومين مخصص + شعار في tab + Open Graph image.
-- [ ] PWA + قابلية التثبيت على الجوال.
-
-## Implemented (2026-05-19 — Catalog Refactor + New Games)
-- ✅ حذف شارة "Made with Emergent" من أسفل الموقع (`public/index.html`).
-- ✅ إعادة هيكلة `frontend/src/data/products.js` بشكل شامل مع كومنتات عربية واضحة:
-  - قسم STORE (رقم واتساب + اسم المتجر + إنستغرام) في الأعلى مع شرح.
-  - قسم SUBSCRIPTIONS مع تنسيق أعمدة مرتب.
-  - قسم GAMES مع شرح كل حقل (four/five/available).
-- ✅ إضافة حقل `available: true/false` لكل لعبة.
-  - عند `available: false` تظهر شارة حمراء "غير متوفرة حالياً" فوق صورة اللعبة + يتعطل زر الإضافة + يتغير السعر إلى "غير متوفرة".
-  - منطق الـ disable مطبّق في `GameCard.jsx` عبر `canBuy = isAvailable && hasPrice`.
-- ✅ إضافة ٩ ألعاب جديدة: Arc Raiders، Ghost of Tsushima (Arabic)، The Crew Motorfest، TLOU 1 Remastered، Elden Ring، RE 8 Village، RE 7 Biohazard، NBA 2K26 Slam Edition، Horizon Forbidden West.
-- ✅ تحميل أغلفة جميع الألعاب الجديدة من Steam CDN + Wikipedia (Arc Raiders + NBA 2K26 + Crew Motorfest استخدمنا fallback gradient لعدم توفر صورة موثوقة).
-- ✅ كل أسعار الألعاب الجديدة تبدأ كـ `null` (تظهر شارة "السعر قريباً") لينضبطها المستخدم لاحقاً بسهولة.
-
-## How to Edit (للمستخدم)
-كل التعديلات في ملف واحد: `frontend/src/data/products.js`
-- **تغيير رقم الواتساب** → بدّل قيمة `whatsapp` و `whatsappDisplay` في قسم STORE.
-- **تغيير سعر لعبة** → عدّل قيمة `four:` أو `five:` (السعر بالدولار).
-- **تعطيل لعبة مؤقتاً** → غيّر `available: true` إلى `available: false`.
-- **حفظ الملف** → الموقع يتحدّث تلقائياً.
+- [ ] Audit log (who changed what, when).
+- [ ] Multi-admin support (currently a single seeded admin).
+- [ ] PWA support.
 
 ## Next Tasks
-1. تزويد المستخدم بأسعار الألعاب الجديدة عند توفرها.
-2. (اختياري) رفع صور بديلة لـ Arc Raiders + NBA 2K26 + The Crew Motorfest.
-3. النشر على Netlify (تعليمات في `README.md`).
+1. Polish admin UI tags + add testids on action buttons.
+2. Translate remaining sections (Reviews/FAQ/Recommender) fully to EN.
+3. Deploy to Netlify (frontend) + a Python host (backend) when ready.
