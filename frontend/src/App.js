@@ -21,6 +21,9 @@ import { Bundles } from "./components/Bundles";
 import { BundleBuilder } from "./components/BundleBuilder";
 import { Recommender } from "./components/Recommender";
 import { CompareButton } from "./components/GameCompare";
+import { PromoBanner } from "./components/PromoBanner";
+import { SocialProofToast } from "./components/SocialProofToast";
+import { EmailSignup } from "./components/EmailSignup";
 import GameDetail from "./pages/GameDetail";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -89,7 +92,7 @@ const SECTION_RENDERERS = {
     comparison: () => <ComparisonTable />,
     bundles: () => <Bundles />,
     bundleBuilder: () => <BundleBuilder />,
-    games: ({ games, store }) => (
+    games: ({ games, store, waTemplates }) => (
         <section
             id="games"
             data-testid="games-section"
@@ -127,7 +130,7 @@ const SECTION_RENDERERS = {
                             </p>
                         </div>
                         <button
-                            onClick={() => quickInquiry("أبحث عن لعبة محددة، هل تتوفر؟", store)}
+                            onClick={() => quickInquiry("لعبة مخصصة بطلب عميل", store, waTemplates)}
                             data-testid="cta-custom-game"
                             className="inline-flex items-center justify-center gap-2 rounded-full px-6 h-12 bg-[#25D366] text-white font-semibold hover:bg-[#1DA851] transition-colors w-fit"
                         >
@@ -140,12 +143,13 @@ const SECTION_RENDERERS = {
         </section>
     ),
     reviews: () => <Reviews />,
+    emailSignup: () => <EmailSignup />,
     faq: () => <FAQ />,
 };
 
 function HomePage() {
     const [cartOpen, setCartOpen] = useState(false);
-    const { subscriptions, games, store, sections, loading } = useStoreData();
+    const { subscriptions, games, store, sections, waTemplates, loading } = useStoreData();
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -185,6 +189,7 @@ function HomePage() {
             data-testid="app-root"
         >
             <Header onOpenCart={() => setCartOpen(true)} />
+            <PromoBanner />
             <Hero />
             <Ticker />
 
@@ -197,6 +202,7 @@ function HomePage() {
                         subscriptions={subscriptions}
                         games={games}
                         store={store}
+                        waTemplates={waTemplates}
                     />
                 );
             })}
@@ -204,9 +210,10 @@ function HomePage() {
             <Footer />
 
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+            <SocialProofToast />
 
             <button
-                onClick={() => quickInquiry("الاستفسار العام عن المنتجات", store)}
+                onClick={() => quickInquiry(null, store, waTemplates)}
                 data-testid="floating-whatsapp"
                 aria-label="تواصل عبر واتساب"
                 className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-[#25D366] text-white shadow-2xl shadow-[#25D366]/40 flex items-center justify-center hover:bg-[#1DA851] transition-colors wa-pulse"

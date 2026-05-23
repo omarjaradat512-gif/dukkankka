@@ -16,11 +16,11 @@ export const CartDrawer = ({ open, onOpenChange }) => {
     const { items, totalPrice, totalQty, inc, dec, remove, clear } = useCart();
     const { format, code } = useCurrency();
     const { t, isRTL } = useLang();
-    const { store } = useStoreData();
+    const { store, waTemplates } = useStoreData();
 
     const handleCheckout = () => {
         if (items.length === 0) return;
-        const msg = buildOrderMessage(items, format, code, store);
+        const msg = buildOrderMessage(items, format, code, store, waTemplates);
         openWhatsApp(msg, store);
     };
 

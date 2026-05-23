@@ -4,7 +4,7 @@ import { useLang, pickLocalized } from "../contexts/LanguageContext";
 import { quickInquiry } from "../lib/whatsapp";
 
 export const Footer = () => {
-    const { store } = useStoreData();
+    const { store, waTemplates } = useStoreData();
     const { t, lang } = useLang();
     const name = pickLocalized(store, "name", lang);
     const tagline = pickLocalized(store, "tagline", lang);
@@ -40,7 +40,7 @@ export const Footer = () => {
                     </h4>
                     <div className="space-y-3">
                         <button
-                            onClick={() => quickInquiry(t("footer.contact"), store)}
+                            onClick={() => quickInquiry(null, store, waTemplates)}
                             data-testid="footer-whatsapp"
                             className="flex items-center gap-3 group"
                         >

@@ -47,6 +47,40 @@ export const apiGetSections = () => client.get("/sections").then((r) => r.data);
 export const apiUpdateSections = (sections) =>
     client.put("/admin/sections", { sections }).then((r) => r.data);
 
+// Promo banner
+export const apiGetPromo = () => client.get("/promo").then((r) => r.data);
+export const apiUpdatePromo = (data) => client.put("/admin/promo", data).then((r) => r.data);
+
+// Social proof
+export const apiGetSocialProof = () => client.get("/social-proof").then((r) => r.data);
+export const apiUpdateSocialProof = (data) =>
+    client.put("/admin/social-proof", data).then((r) => r.data);
+
+// WhatsApp templates
+export const apiGetWATemplates = () => client.get("/wa-templates").then((r) => r.data);
+export const apiUpdateWATemplates = (data) =>
+    client.put("/admin/wa-templates", data).then((r) => r.data);
+
+// Subscribers
+export const apiSubscribe = (email) => client.post("/subscribers", { email }).then((r) => r.data);
+export const apiListSubscribers = () => client.get("/admin/subscribers").then((r) => r.data);
+export const apiDeleteSubscriber = (email) =>
+    client.delete(`/admin/subscribers/${encodeURIComponent(email)}`).then((r) => r.data);
+
+// Audit log
+export const apiListAudit = (limit = 100) =>
+    client.get(`/admin/audit?limit=${limit}`).then((r) => r.data);
+
+// Image upload
+export const apiUploadImage = async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await client.post("/admin/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+};
+
 // Admin: Subscriptions
 export const apiCreateSubscription = (data) => client.post("/admin/subscriptions", data).then((r) => r.data);
 export const apiUpdateSubscription = (id, data) => client.put(`/admin/subscriptions/${id}`, data).then((r) => r.data);

@@ -5,7 +5,7 @@ import { useStoreData } from "../contexts/DataContext";
 
 export const Hero = () => {
     const { t, isRTL, lang } = useLang();
-    const { store } = useStoreData();
+    const { store, waTemplates } = useStoreData();
     const storeName = pickLocalized(store, "name", lang);
     const Arrow = isRTL ? ArrowLeft : ArrowRight;
     return (
@@ -48,7 +48,7 @@ export const Hero = () => {
                             <Arrow className="w-4 h-4" />
                         </a>
                         <button
-                            onClick={() => quickInquiry(t("hero.cta.whatsapp"), store)}
+                            onClick={() => quickInquiry(null, store, waTemplates)}
                             data-testid="hero-cta-whatsapp"
                             className="inline-flex items-center gap-2 rounded-full px-6 h-12 bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1DA851] transition-colors"
                         >

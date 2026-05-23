@@ -10,6 +10,8 @@ import SubscriptionsTab from "../components/admin/SubscriptionsTab";
 import GamesTab from "../components/admin/GamesTab";
 import BundlesTab from "../components/admin/BundlesTab";
 import SectionsTab from "../components/admin/SectionsTab";
+import MarketingTab from "../components/admin/MarketingTab";
+import AuditTab from "../components/admin/AuditTab";
 
 export default function AdminDashboard() {
     const { user, loading, logout } = useAuth();
@@ -87,42 +89,56 @@ export default function AdminDashboard() {
                 <Tabs value={tab} onValueChange={setTab} className="w-full">
                     <TabsList
                         data-testid="admin-tabs"
-                        className="w-full grid grid-cols-2 sm:grid-cols-5 gap-1 bg-white/70 border border-[hsl(var(--brand-ink))]/10 rounded-2xl p-1 h-auto"
+                        className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 bg-white/70 border border-[hsl(var(--brand-ink))]/10 rounded-2xl p-1 h-auto"
                     >
                         <TabsTrigger
                             value="store"
                             data-testid="tab-store"
-                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
                         >
                             إعدادات المتجر
                         </TabsTrigger>
                         <TabsTrigger
                             value="sections"
                             data-testid="tab-sections"
-                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
                         >
                             ترتيب الأقسام
                         </TabsTrigger>
                         <TabsTrigger
                             value="subscriptions"
                             data-testid="tab-subscriptions"
-                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
                         >
                             الاشتراكات
                         </TabsTrigger>
                         <TabsTrigger
                             value="games"
                             data-testid="tab-games"
-                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
                         >
                             الألعاب
                         </TabsTrigger>
                         <TabsTrigger
                             value="bundles"
                             data-testid="tab-bundles"
-                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
                         >
                             الباقات
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="marketing"
+                            data-testid="tab-marketing"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
+                        >
+                            التسويق
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="audit"
+                            data-testid="tab-audit"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold text-xs sm:text-sm"
+                        >
+                            سجل التدقيق
                         </TabsTrigger>
                     </TabsList>
 
@@ -140,6 +156,12 @@ export default function AdminDashboard() {
                     </TabsContent>
                     <TabsContent value="bundles" className="mt-6">
                         <BundlesTab onChanged={reload} />
+                    </TabsContent>
+                    <TabsContent value="marketing" className="mt-6">
+                        <MarketingTab onChanged={reload} />
+                    </TabsContent>
+                    <TabsContent value="audit" className="mt-6">
+                        <AuditTab />
                     </TabsContent>
                 </Tabs>
             </main>

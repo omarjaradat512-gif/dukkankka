@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useStoreData } from "../../contexts/DataContext";
 import {
     apiCreateGame,
     apiUpdateGame,
     apiDeleteGame,
+    apiUploadImage,
     formatApiError,
 } from "../../lib/api";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Save, X, Loader2, Search, Star, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Pencil, Save, X, Loader2, Search, Star, Eye, EyeOff, Upload } from "lucide-react";
 import { Input, Field, Toggle, numOrNull } from "./_widgets";
 
 const blank = () => ({
@@ -379,18 +380,10 @@ function GameEditor({ creating, busy, form, setForm, onSave, onCancel }) {
                         title="الصورة والمظهر"
                         hint="رابط صورة الغلاف. إذا ما توفرت صورة، يظهر تدرّج لوني."
                     >
-                        <Field
-                            label="رابط صورة الغلاف"
-                            hint="من Steam, Wikipedia, أو رابط صورة عام. للصور المحلية: /games/ملف.jpg"
-                        >
-                            <Input
-                                data-testid="game-image-input"
-                                value={form.image}
-                                onChange={(e) => set("image", e.target.value)}
-                                dir="ltr"
-                                placeholder="/games/eafc26.jpg"
-                            />
-                        </Field>
+                        <ImageUploadField
+                            value={form.image}
+                            onChange={(v) => set("image", v)}
+                        />
 
                         <details className="mt-3">
                             <summary className="text-xs font-bold opacity-75 cursor-pointer hover:opacity-100">
@@ -515,6 +508,78 @@ function EditorSection({ number, title, hint, children }) {
                 </div>
             </div>
             <div>{children}</div>
+        </div>
+    );
+}
+
+function ImageUploadField({ value, onChange }) {
+    const fileRef = useRef(null);
+    const [uploading, setUploading] = useState(false);
+
+    const onPick = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("حجم الصورة أكبر من 5 ميغابايت");
+            return;
+        }
+        setUploading(true);
+        try {
+            const res = await apiUploadImage(file);
+            // res.url is "/api/uploads/<file>"; turn into absolute so we can preview from anywhere
+            const apiBase = process.env.REACT_APP_BACKEND_URL || "";
+            const absolute = `${apiBase}${res.url}`;
+            onChange(absolute);
+            toast.success("تم رفع الصورة بنجاح");
+        } catch (e) {
+            toast.error(formatApiError(e));
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    };
+
+    return (
+        <div>
+            <div className="block">
+                <span className="block text-[11px] font-bold text-[hsl(var(--brand-cream))]/70 mb-1">
+                    صورة الغلاف
+                </span>
+                <span className="block text-[10px] text-[hsl(var(--brand-cream))]/50 mb-2">
+                    ارفع صورة من جهازك (PNG/JPG/WEBP، حد أقصى 5 ميغابايت) — أو الصق رابط
+                </span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                    data-testid="game-image-input"
+                    value={value || ""}
+                    onChange={(e) => onChange(e.target.value)}
+                    dir="ltr"
+                    placeholder="https://... أو ارفع من جهازك"
+                />
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={onPick}
+                    data-testid="game-image-file"
+                />
+                <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    data-testid="game-image-upload-button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg px-4 h-10 bg-[#7CFF8A] text-[hsl(var(--brand-ink))] text-sm font-bold hover:bg-[#9affa6] disabled:opacity-50 whitespace-nowrap"
+                >
+                    {uploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <Upload className="w-4 h-4" />
+                    )}
+                    {uploading ? "جاري الرفع..." : "رفع من الجهاز"}
+                </button>
+            </div>
         </div>
     );
 }

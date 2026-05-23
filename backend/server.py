@@ -9,11 +9,14 @@ import logging
 import uuid
 import bcrypt
 import jwt
+import secrets
+import shutil
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Any, Dict
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
@@ -40,6 +43,11 @@ JWT_EXPIRY_HOURS = 24
 app = FastAPI(title="Dukkank API")
 api = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
+
+# Uploads dir (served as /api/uploads/<file>)
+UPLOAD_DIR = ROOT_DIR / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +104,25 @@ def strip_id(doc: Optional[dict]) -> Optional[dict]:
         return None
     doc.pop("_id", None)
     return doc
+
+
+async def log_audit(actor: dict, action: str, target_type: str, target_id: str = "",
+                    target_label: str = "", details: Optional[dict] = None):
+    """Insert an audit-log entry. Fire-and-forget; failures must not break the request."""
+    try:
+        entry = {
+            "id": str(uuid.uuid4()),
+            "actor_email": actor.get("email", "system") if actor else "system",
+            "action": action,                  # create | update | delete | other
+            "target_type": target_type,        # store | subscription | game | bundle | sections | promo | social_proof | wa_templates | subscriber | upload
+            "target_id": target_id or "",
+            "target_label": target_label or "",
+            "details": details or {},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.audit_log.insert_one(entry)
+    except Exception as e:
+        logger.warning(f"audit log failed: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +262,7 @@ async def update_store(payload: StoreSettings, current=Depends(get_current_admin
     data = payload.model_dump()
     data["key"] = "store"
     await db.settings.update_one({"key": "store"}, {"$set": data}, upsert=True)
+    await log_audit(current, "update", "store", "store", payload.name)
     data.pop("key", None)
     return data
 
@@ -247,6 +275,7 @@ async def create_subscription(payload: Subscription, current=Depends(get_current
     if await db.subscriptions.find_one({"id": payload.id}):
         raise HTTPException(400, "Subscription id already exists")
     await db.subscriptions.insert_one(payload.model_dump())
+    await log_audit(current, "create", "subscription", payload.id, payload.name)
     return payload.model_dump()
 
 
@@ -257,14 +286,17 @@ async def update_subscription(sub_id: str, payload: Subscription, current=Depend
     res = await db.subscriptions.update_one({"id": sub_id}, {"$set": data})
     if res.matched_count == 0:
         raise HTTPException(404, "Subscription not found")
+    await log_audit(current, "update", "subscription", sub_id, payload.name)
     return data
 
 
 @api.delete("/admin/subscriptions/{sub_id}")
 async def delete_subscription(sub_id: str, current=Depends(get_current_admin)):
+    existing = await db.subscriptions.find_one({"id": sub_id})
     res = await db.subscriptions.delete_one({"id": sub_id})
     if res.deleted_count == 0:
         raise HTTPException(404, "Subscription not found")
+    await log_audit(current, "delete", "subscription", sub_id, (existing or {}).get("name", sub_id))
     return {"deleted": sub_id}
 
 
@@ -280,6 +312,7 @@ async def create_game(payload: Game, current=Depends(get_current_admin)):
     doc = payload.model_dump()
     doc["order"] = count
     await db.games.insert_one(doc)
+    await log_audit(current, "create", "game", payload.id, payload.name)
     doc.pop("order", None)
     doc.pop("_id", None)
     return doc
@@ -292,14 +325,17 @@ async def update_game(game_id: str, payload: Game, current=Depends(get_current_a
     res = await db.games.update_one({"id": game_id}, {"$set": data})
     if res.matched_count == 0:
         raise HTTPException(404, "Game not found")
+    await log_audit(current, "update", "game", game_id, payload.name)
     return data
 
 
 @api.delete("/admin/games/{game_id}")
 async def delete_game(game_id: str, current=Depends(get_current_admin)):
+    existing = await db.games.find_one({"id": game_id})
     res = await db.games.delete_one({"id": game_id})
     if res.deleted_count == 0:
         raise HTTPException(404, "Game not found")
+    await log_audit(current, "delete", "game", game_id, (existing or {}).get("name", game_id))
     return {"deleted": game_id}
 
 
@@ -311,6 +347,7 @@ async def create_bundle(payload: Bundle, current=Depends(get_current_admin)):
     if await db.bundles.find_one({"id": payload.id}):
         raise HTTPException(400, "Bundle id already exists")
     await db.bundles.insert_one(payload.model_dump())
+    await log_audit(current, "create", "bundle", payload.id, payload.id)
     return payload.model_dump()
 
 
@@ -321,6 +358,7 @@ async def update_bundle(bundle_id: str, payload: Bundle, current=Depends(get_cur
     res = await db.bundles.update_one({"id": bundle_id}, {"$set": data})
     if res.matched_count == 0:
         raise HTTPException(404, "Bundle not found")
+    await log_audit(current, "update", "bundle", bundle_id, bundle_id)
     return data
 
 
@@ -329,6 +367,7 @@ async def delete_bundle(bundle_id: str, current=Depends(get_current_admin)):
     res = await db.bundles.delete_one({"id": bundle_id})
     if res.deleted_count == 0:
         raise HTTPException(404, "Bundle not found")
+    await log_audit(current, "delete", "bundle", bundle_id, bundle_id)
     return {"deleted": bundle_id}
 
 
@@ -371,7 +410,210 @@ async def get_sections():
 async def update_sections(payload: SectionsPayload, current=Depends(get_current_admin)):
     data = {"key": "sections", "sections": [s.model_dump() for s in payload.sections]}
     await db.settings.update_one({"key": "sections"}, {"$set": data}, upsert=True)
+    await log_audit(current, "update", "sections", "sections")
     return data["sections"]
+
+
+# ---------------------------------------------------------------------------
+# Promo Banner (Urgency Timer)
+# ---------------------------------------------------------------------------
+class PromoBanner(BaseModel):
+    enabled: bool = False
+    title: str = ""
+    subtitle: str = ""
+    endsAt: Optional[str] = None        # ISO8601 string
+    ctaLabel: str = ""
+    ctaHref: str = ""
+
+
+@api.get("/promo")
+async def get_promo():
+    doc = await db.settings.find_one({"key": "promo"})
+    if not doc:
+        return {"enabled": False, "title": "", "subtitle": "", "endsAt": None, "ctaLabel": "", "ctaHref": ""}
+    return {k: v for k, v in doc.items() if k not in ("_id", "key")}
+
+
+@api.put("/admin/promo")
+async def update_promo(payload: PromoBanner, current=Depends(get_current_admin)):
+    data = payload.model_dump()
+    data["key"] = "promo"
+    await db.settings.update_one({"key": "promo"}, {"$set": data}, upsert=True)
+    await log_audit(current, "update", "promo", "promo", payload.title)
+    data.pop("key", None)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Social Proof Messages
+# ---------------------------------------------------------------------------
+DEFAULT_SOCIAL_PROOF = [
+    "محمد من عمّان اشترى للتو PS Plus Extra سنوي",
+    "أحمد من جدّة اشترك بـ PS Plus Essential شهر",
+    "علي من الرياض حصل على EA Sports FC 26",
+    "سامي من إربد طلب باقة GTA V + PS Plus",
+    "خالد من الدمام اشترى Call of Duty: Black Ops 7",
+    "ياسر من الزرقاء اشترى Spider-Man 2 بالعربية",
+    "نواف من الكويت طلب اشتراك PS Plus Extra ٣ شهور",
+    "فهد من المنامة اشترى Red Dead Redemption 2",
+    "تركي من القاهرة طلب FC 26 + اشتراك سنوي",
+    "رامي من رام الله طلب Ghost of Yotei",
+]
+
+
+class SocialProofPayload(BaseModel):
+    enabled: bool = True
+    intervalSeconds: int = 12
+    messages: List[str] = []
+
+
+@api.get("/social-proof")
+async def get_social_proof():
+    doc = await db.settings.find_one({"key": "social_proof"})
+    if not doc:
+        return {"enabled": True, "intervalSeconds": 12, "messages": DEFAULT_SOCIAL_PROOF}
+    return {
+        "enabled": doc.get("enabled", True),
+        "intervalSeconds": doc.get("intervalSeconds", 12),
+        "messages": doc.get("messages", DEFAULT_SOCIAL_PROOF),
+    }
+
+
+@api.put("/admin/social-proof")
+async def update_social_proof(payload: SocialProofPayload, current=Depends(get_current_admin)):
+    data = {
+        "key": "social_proof",
+        "enabled": payload.enabled,
+        "intervalSeconds": max(3, payload.intervalSeconds),
+        "messages": [m.strip() for m in payload.messages if m.strip()],
+    }
+    await db.settings.update_one({"key": "social_proof"}, {"$set": data}, upsert=True)
+    await log_audit(current, "update", "social_proof", "social_proof")
+    data.pop("key", None)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp Templates
+# ---------------------------------------------------------------------------
+DEFAULT_WA_TEMPLATES = {
+    "general": "السلام عليكم 👋\nأود الاستفسار عن منتجات متجر {storeName}.",
+    "productInquiry": "السلام عليكم 👋\nشفت {productName} في متجركم وأبغى أطلبه.\n\nهل لا يزال متوفر؟",
+    "orderHeader": "السلام عليكم 👋\nأرغب بطلب من متجر *{storeName}*:",
+    "orderFooter": "شكراً لكم 🌟",
+}
+
+
+class WATemplatesPayload(BaseModel):
+    general: str = DEFAULT_WA_TEMPLATES["general"]
+    productInquiry: str = DEFAULT_WA_TEMPLATES["productInquiry"]
+    orderHeader: str = DEFAULT_WA_TEMPLATES["orderHeader"]
+    orderFooter: str = DEFAULT_WA_TEMPLATES["orderFooter"]
+
+
+@api.get("/wa-templates")
+async def get_wa_templates():
+    doc = await db.settings.find_one({"key": "wa_templates"})
+    if not doc:
+        return DEFAULT_WA_TEMPLATES
+    return {k: doc.get(k, v) for k, v in DEFAULT_WA_TEMPLATES.items()}
+
+
+@api.put("/admin/wa-templates")
+async def update_wa_templates(payload: WATemplatesPayload, current=Depends(get_current_admin)):
+    data = payload.model_dump()
+    data["key"] = "wa_templates"
+    await db.settings.update_one({"key": "wa_templates"}, {"$set": data}, upsert=True)
+    await log_audit(current, "update", "wa_templates", "wa_templates")
+    data.pop("key", None)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Email subscribers (10% discount signup)
+# ---------------------------------------------------------------------------
+class SubscriberSignup(BaseModel):
+    email: EmailStr
+
+
+def _gen_discount_code() -> str:
+    return "DUKKANK10-" + secrets.token_hex(3).upper()
+
+
+@api.post("/subscribers")
+async def subscribe(payload: SubscriberSignup):
+    email = payload.email.lower().strip()
+    existing = await db.subscribers.find_one({"email": email})
+    if existing:
+        return {
+            "code": existing["code"],
+            "email": email,
+            "alreadyRegistered": True,
+        }
+    code = _gen_discount_code()
+    await db.subscribers.insert_one({
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "code": code,
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"code": code, "email": email, "alreadyRegistered": False}
+
+
+@api.get("/admin/subscribers")
+async def list_subscribers(current=Depends(get_current_admin)):
+    items = await db.subscribers.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return items
+
+
+@api.delete("/admin/subscribers/{email}")
+async def delete_subscriber(email: str, current=Depends(get_current_admin)):
+    res = await db.subscribers.delete_one({"email": email.lower().strip()})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Subscriber not found")
+    await log_audit(current, "delete", "subscriber", email, email)
+    return {"deleted": email}
+
+
+# ---------------------------------------------------------------------------
+# Image upload (admin only)
+# ---------------------------------------------------------------------------
+@api.post("/admin/upload")
+async def upload_image(file: UploadFile = File(...), current=Depends(get_current_admin)):
+    # Validate extension
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in ALLOWED_IMAGE_EXT:
+        raise HTTPException(400, f"الامتداد غير مسموح. المسموح: {', '.join(sorted(ALLOWED_IMAGE_EXT))}")
+
+    name = f"{uuid.uuid4().hex}{ext}"
+    dest = UPLOAD_DIR / name
+    try:
+        with dest.open("wb") as out:
+            shutil.copyfileobj(file.file, out)
+    finally:
+        await file.close()
+
+    # File size cap (~ 5 MB)
+    if dest.stat().st_size > 5 * 1024 * 1024:
+        try:
+            dest.unlink()
+        except Exception:
+            pass
+        raise HTTPException(400, "حجم الصورة أكبر من 5 ميغابايت")
+
+    url = f"/api/uploads/{name}"
+    await log_audit(current, "create", "upload", name, file.filename or name)
+    return {"url": url, "name": name, "size": dest.stat().st_size}
+
+
+# ---------------------------------------------------------------------------
+# Audit Log
+# ---------------------------------------------------------------------------
+@api.get("/admin/audit")
+async def list_audit(limit: int = 100, current=Depends(get_current_admin)):
+    items = await db.audit_log.find({}, {"_id": 0}).sort("timestamp", -1).to_list(max(1, min(limit, 500)))
+    return items
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +676,8 @@ async def on_startup():
     await db.subscriptions.create_index("id", unique=True)
     await db.games.create_index("id", unique=True)
     await db.bundles.create_index("id", unique=True)
+    await db.subscribers.create_index("email", unique=True)
+    await db.audit_log.create_index("timestamp")
     await seed_admin()
     await seed_initial_data()
     logger.info("Startup complete")
@@ -448,6 +692,8 @@ async def on_shutdown():
 # Wire up
 # ---------------------------------------------------------------------------
 app.include_router(api)
+# Serve uploaded images via /api/uploads/<file>
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
