@@ -383,6 +383,7 @@ DEFAULT_SECTIONS = [
     {"id": "bundles",       "label": "الباقات المدمجة",             "visible": True},
     {"id": "bundleBuilder", "label": "ابني باقتك",                  "visible": True},
     {"id": "games",         "label": "الألعاب",                     "visible": True},
+    {"id": "emailSignup",   "label": "اشترك بالنشرة + خصم 10%",     "visible": True},
     {"id": "reviews",       "label": "آراء العملاء",                "visible": True},
     {"id": "faq",           "label": "الأسئلة الشائعة",             "visible": True},
 ]
@@ -668,6 +669,21 @@ async def seed_initial_data():
     if await db.bundles.count_documents({}) == 0:
         await db.bundles.insert_many(list(INITIAL_BUNDLES))
         logger.info(f"Seeded {len(INITIAL_BUNDLES)} bundles")
+
+    # Sections: migrate to include any new default sections that aren't already present.
+    sec_doc = await db.settings.find_one({"key": "sections"})
+    if sec_doc:
+        current_ids = {s.get("id") for s in sec_doc.get("sections", [])}
+        missing = [s for s in DEFAULT_SECTIONS if s["id"] not in current_ids]
+        if missing:
+            # Insert each missing section just before any matching neighbor (or append).
+            new_list = list(sec_doc.get("sections", []))
+            for m in missing:
+                # Insert by default order index
+                idx = next((i for i, d in enumerate(DEFAULT_SECTIONS) if d["id"] == m["id"]), len(new_list))
+                new_list.insert(min(idx, len(new_list)), m)
+            await db.settings.update_one({"key": "sections"}, {"$set": {"sections": new_list}})
+            logger.info(f"Migrated sections: added {[m['id'] for m in missing]}")
 
 
 @app.on_event("startup")

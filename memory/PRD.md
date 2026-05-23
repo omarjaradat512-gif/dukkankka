@@ -1,61 +1,60 @@
 # PRD — دُكانك (Dukkank)
 
-## Original Problem Statement
-موقع متجر اشتراكات وألعاب رقمية. التعديلات حسب الجلسات:
-
-### Iteration 1 (مكتملة)
-1. لوحة إدارة كاملة (Admin Panel) لإدارة المنتجات بدون كود.
-2. دعم اللغة الإنجليزية (مع تبديل).
-
-### Iteration 2 (مكتملة)
-1. حذف اللغة الإنجليزية بالكامل (عربي فقط).
-2. حذف حاسبة التوفير.
-3. حذف بطاقات الشحن من Bundle Builder.
-4. تحسين نموذج تعديل اللعبة (أوضح + معاينة مباشرة).
-5. إضافة تبويب "ترتيب الأقسام" مع سحب/أرقام + إخفاء/إظهار لكل قسم.
+## Status: 3 iterations completed
+- **Iter 1**: Admin Panel (login, store CRUD, subscriptions CRUD, games CRUD, bundles CRUD) + English language toggle
+- **Iter 2**: Removed English, removed Savings Calc, removed top-ups; improved Games editor (3-section layout + live preview); added Sections-order tab (drag-and-drop)
+- **Iter 3 (current)**: Live Social Proof, Promo Banner (countdown), WhatsApp Templates, Email Signup (discount codes), Audit Log, Image Upload
 
 ## Architecture
-- **Backend** — FastAPI + Motor (async MongoDB). JWT auth + bcrypt.
-- **Frontend** — React (CRA) + Tailwind + shadcn/ui + react-router-dom v7. Arabic RTL only.
-- **Data** — Products/Subscriptions/Bundles/Store/Sections in MongoDB; seeded on first startup; CRUD via admin panel.
-- **Auth** — Bearer token (24h JWT) in `localStorage`. Admin seeded from `ADMIN_EMAIL`/`ADMIN_PASSWORD` env.
-- **Checkout** — WhatsApp deep-link.
-
-## User Personas
-- **Admin** — full management at `/admin`.
-- **Customer** — Arabic-only browsing + WhatsApp checkout.
+- Backend: FastAPI + Motor (MongoDB) + JWT bcrypt + StaticFiles mount for uploads
+- Frontend: React (CRA) + Tailwind + shadcn/ui + react-router-dom v7. Arabic RTL only.
+- Auth: Bearer JWT 24h in localStorage. Admin seeded from env on startup.
 
 ## Implemented Features
 
-### Backend
-- ✅ Auth: login + me (JWT, bcrypt).
-- ✅ Admin seeding from env (idempotent).
-- ✅ Public reads: `/api/store`, `/api/subscriptions`, `/api/games`, `/api/bundles`, `/api/sections`.
-- ✅ Admin CRUD on all entities + sections reorder/visibility.
-- ✅ Seed of original products on first startup.
+### Public-facing (Customer side)
+- ✅ Hero, Ticker, Recommender quiz, PS+ Essential/Extra subscriptions
+- ✅ Bundles, BundleBuilder (no top-ups), Games grid with details
+- ✅ EmailSignup section (instant DUKKANK10-XXXXXX code on submit)
+- ✅ Reviews, FAQ, Comparison table
+- ✅ Cart with WhatsApp checkout (uses admin-configured templates)
+- ✅ **PromoBanner** at top: countdown timer, dismissible per-session
+- ✅ **SocialProofToast** bottom-left, rotates messages, dismissible per-session
 
-### Frontend
-- ✅ Arabic-only UI (LanguageContext locked to ar).
-- ✅ Homepage renders sections dynamically per `/api/sections` (order + visibility).
-- ✅ DataContext fetches everything from API; falls back to static while loading.
-- ✅ Admin Dashboard with 5 tabs: Store Settings, ترتيب الأقسام, Subscriptions, Games, Bundles.
-- ✅ **Sections tab**: drag-and-drop + arrow buttons + visibility toggle, save/reset with dirty-state.
-- ✅ **Games editor**: 3 numbered sections (Basic info, Pricing & Availability, Image & Look) + Live preview panel + hints under every field. Advanced colors hidden in `<details>`.
-- ✅ Removed: Language toggle button, Savings Calculator section, BundleBuilder top-up cards.
+### Admin Panel (`/admin`) — 7 tabs
+1. **إعدادات المتجر** — name, tagline, whatsapp, instagram
+2. **ترتيب الأقسام** — drag/arrows reorder + visibility per section (10 sections incl. emailSignup)
+3. **الاشتراكات** — edit subscription names/taglines + duration prices PS4/PS5
+4. **الألعاب** — search, add/edit/delete games; 3-section editor (Basic / Pricing / Visuals); **upload image from device** + URL input; live preview panel
+5. **الباقات** — create/edit bundles with sub/duration/game/tier dropdowns
+6. **التسويق** — 4 sub-sections:
+   - Promo Banner (enable, title, subtitle, datetime-local endsAt, CTA label/href)
+   - Social Proof (enable, interval seconds, messages list add/remove)
+   - WhatsApp Templates (general / productInquiry / orderHeader / orderFooter with {storeName} and {productName} variables)
+   - Subscribers list (table with email/code/date + delete + copy-all-emails)
+7. **سجل التدقيق** — last 200 admin actions with action icons, target type, target label, actor email, timestamp. Search + refresh.
 
-### Tests
-- ✅ Backend pytest: 22/22 (auth, public, admin CRUD, sections).
-- ✅ Frontend E2E: language removal, section reorder/visibility persistence, games editor sections + preview.
+### Backend Endpoints
+- Public reads: `/api/{store,subscriptions,games,bundles,sections,promo,social-proof,wa-templates}`
+- Auth: `/api/auth/{login,me}`
+- Subscribers: POST `/api/subscribers` (public signup), `/api/admin/subscribers` GET/DELETE
+- Admin CRUD: all `/api/admin/{store,sections,subscriptions/{id},games/{id},bundles/{id},promo,social-proof,wa-templates,upload,audit}`
+- Static uploads: `/api/uploads/<filename>` (mounted from /app/backend/uploads/)
+- Every admin write logs to `audit_log` collection via fire-and-forget `log_audit()`
+
+## Tests
+- ✅ Backend pytest: **39/39 pass** (auth, public, admin CRUD, sections, promo, social-proof, wa-templates, subscribers, audit, upload)
+- ✅ Frontend E2E verified: all 7 tabs, all marketing testids, EmailSignup E2E flow with code shown, Promo banner rendering with countdown, SocialProofToast rotating.
 
 ## Test Credentials
 `/app/memory/test_credentials.md` — admin@dukkank.com / omar512@@OoD
 
 ## Backlog
-- P1: Image upload (replace URL input).
-- P1: Validate sections payload contains all 9 known ids on PUT.
-- P2: Audit log.
-- P2: Multi-admin support.
-- P3: Live social-proof ticker ("X اشترى للتو من جدة").
+- P1: Color-coding the admin field labels better in dark dialogs (initial issue noted; fixed with `opacity-75` instead of fixed dark color).
+- P2: Send the discount code via email (currently only displayed in-browser; needs SendGrid/Resend integration).
+- P2: Replace login URL with a hard-to-guess prefix for added obscurity.
+- P3: Multi-admin support.
+- P3: PWA / offline mode.
 
-## Next Tasks
-- Wait for user feedback / next change request.
+## Domain Question (recurring)
+Once user maps a custom domain, admin login is reachable at `https://<domain>/admin/login` with the same credentials.

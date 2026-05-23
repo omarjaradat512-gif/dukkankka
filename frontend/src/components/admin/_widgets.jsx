@@ -19,12 +19,12 @@ export const Textarea = (props) => (
 
 export const Field = ({ label, hint, children }) => (
     <label className="block">
-        <span className="block text-[11px] font-bold text-[hsl(var(--brand-ink))]/70 mb-1">
+        <span className="block text-[11px] font-bold opacity-75 mb-1">
             {label}
         </span>
         {children}
         {hint && (
-            <span className="block text-[10px] text-[hsl(var(--brand-ink))]/50 mt-0.5">
+            <span className="block text-[10px] opacity-55 mt-0.5">
                 {hint}
             </span>
         )}
