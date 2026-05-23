@@ -164,8 +164,7 @@ export const BundleBuilder = () => {
                         اختار أنت، واحنا نخصملك
                     </h2>
                     <p className="mt-3 text-base sm:text-lg text-[hsl(var(--brand-ink))]/70 leading-relaxed">
-                        ضمّ اشتراك + ألعاب + بطاقة شحن، وكل ما زدت عنصر زاد
-                        الخصم تلقائياً.
+                        ضمّ اشتراك + ألعاب، وكل ما زدت عنصر زاد الخصم تلقائياً.
                     </p>
 
                     {/* Discount ladder */}
