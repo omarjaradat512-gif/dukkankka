@@ -6,7 +6,6 @@ import {
     X,
     ShoppingBag,
     Sparkles,
-    Wallet,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -14,14 +13,6 @@ import { useStoreData } from "../contexts/DataContext";
 import { toast } from "sonner";
 
 const TIER_LABEL = { four: "PS4", five: "PS5" };
-
-// Top-up wallet cards (sold as digital extras). Price in USD.
-const TOPUPS = [
-    { id: "topup-10", label: "بطاقة شحن $10", price: 11 },
-    { id: "topup-25", label: "بطاقة شحن $25", price: 27 },
-    { id: "topup-50", label: "بطاقة شحن $50", price: 53 },
-    { id: "topup-100", label: "بطاقة شحن $100", price: 106 },
-];
 
 // Discount tiers based on number of items selected
 const getDiscount = (count) => {
@@ -70,7 +61,6 @@ export const BundleBuilder = () => {
     const [subId, setSubId] = useState(null); // null = no subscription picked
     const [subDur, setSubDur] = useState("ext-3m"); // default duration
     const [gameIds, setGameIds] = useState([]);
-    const [topupId, setTopupId] = useState(null);
     const [adding, setAdding] = useState(false);
 
     const sub = SUBSCRIPTIONS.find((s) => s.id === subId);
@@ -81,8 +71,6 @@ export const BundleBuilder = () => {
         () => gameIds.map((id) => GAMES.find((g) => g.id === id)).filter(Boolean),
         [gameIds],
     );
-
-    const topup = TOPUPS.find((t) => t.id === topupId);
 
     // Build line items (only counted if has price > 0)
     const lineItems = useMemo(() => {
@@ -104,15 +92,8 @@ export const BundleBuilder = () => {
                 });
             }
         }
-        if (topup) {
-            items.push({
-                key: `bb-topup`,
-                label: topup.label,
-                price: topup.price,
-            });
-        }
         return items;
-    }, [sub, dur, subPrice, selectedGames, topup, tier]);
+    }, [sub, dur, subPrice, selectedGames, tier]);
 
     const subtotal = lineItems.reduce((s, i) => s + i.price, 0);
     const discountPct = getDiscount(lineItems.length);
@@ -139,21 +120,12 @@ export const BundleBuilder = () => {
             const matchTitle =
                 item.key === "bb-sub"
                     ? `${item.label} — ${TIER_LABEL[tier]}`
-                    : item.key.startsWith("bb-game")
-                      ? `${item.label} (باقتك)`
-                      : item.label;
+                    : `${item.label} (باقتك)`;
             add({
                 key: `${item.key}-${Date.now()}`,
-                type: item.key.startsWith("bb-sub")
-                    ? "subscription"
-                    : item.key.startsWith("bb-game")
-                      ? "game"
-                      : "topup",
+                type: item.key.startsWith("bb-sub") ? "subscription" : "game",
                 title: matchTitle,
-                subtitle:
-                    item.key === "bb-topup"
-                        ? "إضافة رقمية"
-                        : TIER_LABEL[tier] + (item.key.startsWith("bb-game") ? " (Five/Four)".replace(/\s.*$/, "") : ""),
+                subtitle: TIER_LABEL[tier],
                 price: item.price,
             });
         }
@@ -323,25 +295,6 @@ export const BundleBuilder = () => {
                                 ))}
                             </div>
                         </Section>
-
-                        {/* Step 4: top-up */}
-                        <Section title="٤) بطاقة شحن (اختياري)">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {TOPUPS.map((t) => (
-                                    <Chip
-                                        key={t.id}
-                                        selected={topupId === t.id}
-                                        onClick={() =>
-                                            setTopupId(topupId === t.id ? null : t.id)
-                                        }
-                                        testId={`builder-topup-${t.id}`}
-                                    >
-                                        <Wallet className="w-3 h-3" />
-                                        {t.label}
-                                    </Chip>
-                                ))}
-                            </div>
-                        </Section>
                     </div>
 
                     {/* Right: summary */}
@@ -435,7 +388,6 @@ export const BundleBuilder = () => {
                                 onClick={() => {
                                     setSubId(null);
                                     setGameIds([]);
-                                    setTopupId(null);
                                 }}
                                 data-testid="builder-reset"
                                 className="w-full mt-2 inline-flex items-center justify-center gap-1.5 text-xs opacity-70 hover:opacity-100"

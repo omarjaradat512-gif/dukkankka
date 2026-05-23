@@ -333,6 +333,48 @@ async def delete_bundle(bundle_id: str, current=Depends(get_current_admin)):
 
 
 # ---------------------------------------------------------------------------
+# Sections — homepage section order & visibility
+# ---------------------------------------------------------------------------
+# Each section is identified by a stable key, has an order index, and a visible flag.
+DEFAULT_SECTIONS = [
+    {"id": "recommender",   "label": "مساعدك الشخصي (Recommender)", "visible": True},
+    {"id": "essential",     "label": "الاشتراك الأساسي",            "visible": True},
+    {"id": "extra",         "label": "الاشتراك الإضافي",            "visible": True},
+    {"id": "comparison",    "label": "مقارنة الاشتراكات",           "visible": True},
+    {"id": "bundles",       "label": "الباقات المدمجة",             "visible": True},
+    {"id": "bundleBuilder", "label": "ابني باقتك",                  "visible": True},
+    {"id": "games",         "label": "الألعاب",                     "visible": True},
+    {"id": "reviews",       "label": "آراء العملاء",                "visible": True},
+    {"id": "faq",           "label": "الأسئلة الشائعة",             "visible": True},
+]
+
+
+class SectionItem(BaseModel):
+    id: str
+    label: str = ""
+    visible: bool = True
+
+
+class SectionsPayload(BaseModel):
+    sections: List[SectionItem]
+
+
+@api.get("/sections")
+async def get_sections():
+    doc = await db.settings.find_one({"key": "sections"})
+    if not doc:
+        return DEFAULT_SECTIONS
+    return doc.get("sections", DEFAULT_SECTIONS)
+
+
+@api.put("/admin/sections")
+async def update_sections(payload: SectionsPayload, current=Depends(get_current_admin)):
+    data = {"key": "sections", "sections": [s.model_dump() for s in payload.sections]}
+    await db.settings.update_one({"key": "sections"}, {"$set": data}, upsert=True)
+    return data["sections"]
+
+
+# ---------------------------------------------------------------------------
 # Seeding
 # ---------------------------------------------------------------------------
 async def seed_admin():

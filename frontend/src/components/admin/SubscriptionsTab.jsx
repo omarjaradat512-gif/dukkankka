@@ -122,34 +122,18 @@ export default function SubscriptionsTab({ onChanged }) {
                     {editingId === sub.id ? (
                         <div className="p-5 bg-white space-y-4">
                             <div className="grid sm:grid-cols-2 gap-3">
-                                <Field label="الاسم (عربي)">
+                                <Field label="اسم الاشتراك">
                                     <Input
                                         data-testid={`sub-${sub.id}-name-input`}
                                         value={form.name}
                                         onChange={(e) => set("name", e.target.value)}
                                     />
                                 </Field>
-                                <Field label="الاسم (English)">
-                                    <Input
-                                        data-testid={`sub-${sub.id}-name-en-input`}
-                                        value={form.name_en || ""}
-                                        onChange={(e) => set("name_en", e.target.value)}
-                                        dir="ltr"
-                                    />
-                                </Field>
-                                <Field label="الشعار (عربي)">
+                                <Field label="الشعار / الوصف">
                                     <Input
                                         data-testid={`sub-${sub.id}-tagline-input`}
                                         value={form.tagline}
                                         onChange={(e) => set("tagline", e.target.value)}
-                                    />
-                                </Field>
-                                <Field label="Tagline (English)">
-                                    <Input
-                                        data-testid={`sub-${sub.id}-tagline-en-input`}
-                                        value={form.tagline_en || ""}
-                                        onChange={(e) => set("tagline_en", e.target.value)}
-                                        dir="ltr"
                                     />
                                 </Field>
                             </div>
@@ -163,21 +147,13 @@ export default function SubscriptionsTab({ onChanged }) {
                                         <div
                                             key={d.id}
                                             data-testid={`dur-${d.id}-row`}
-                                            className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_120px_120px] gap-2 rounded-xl border-2 border-[hsl(var(--brand-ink))]/10 bg-[hsl(var(--brand-cream))]/40 p-3"
+                                            className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 rounded-xl border-2 border-[hsl(var(--brand-ink))]/10 bg-[hsl(var(--brand-cream))]/40 p-3"
                                         >
-                                            <Field label="المدة (عربي)">
+                                            <Field label="المدة">
                                                 <Input
                                                     data-testid={`dur-${d.id}-label`}
                                                     value={d.label}
                                                     onChange={(e) => setDur(idx, "label", e.target.value)}
-                                                />
-                                            </Field>
-                                            <Field label="Duration (EN)">
-                                                <Input
-                                                    data-testid={`dur-${d.id}-label-en`}
-                                                    value={d.label_en || ""}
-                                                    onChange={(e) => setDur(idx, "label_en", e.target.value)}
-                                                    dir="ltr"
                                                 />
                                             </Field>
                                             <Field label="PS4 ($)">

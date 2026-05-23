@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 import { CartProvider } from "./contexts/CartContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { DataProvider, useStoreData } from "./contexts/DataContext";
-import { LanguageProvider, useLang } from "./contexts/LanguageContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
@@ -17,7 +17,6 @@ import { Footer } from "./components/Footer";
 import { ComparisonTable } from "./components/ComparisonTable";
 import { Reviews } from "./components/Reviews";
 import { FAQ } from "./components/FAQ";
-import { SavingsCalculator } from "./components/SavingsCalculator";
 import { Bundles } from "./components/Bundles";
 import { BundleBuilder } from "./components/BundleBuilder";
 import { Recommender } from "./components/Recommender";
@@ -28,15 +27,126 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { MessageCircle } from "lucide-react";
 import { quickInquiry } from "./lib/whatsapp";
 
+const SECTION_RENDERERS = {
+    recommender: () => <Recommender />,
+    essential: ({ subscriptions }) => {
+        const essential = subscriptions.find((s) => s.id === "essential");
+        if (!essential) return null;
+        return (
+            <section
+                id="essential"
+                data-testid="essential-section"
+                className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20"
+            >
+                <SectionHeader
+                    eyebrow="الاشتراكات"
+                    title="بلايستيشن بلس أساسي"
+                    description="للاعب اللي بدو الأساسيات: ألعاب شهرية، أونلاين متعدد اللاعبين."
+                />
+                <div className="grid md:grid-cols-2 gap-6 sm:gap-8 stagger">
+                    <SubscriptionCard sub={essential} />
+                    <FeatureHighlight
+                        title="ليش الاشتراك الأساسي؟"
+                        bullets={["اللعب أونلاين مع أصدقائك", "ألعاب شهرية مجانية"]}
+                    />
+                </div>
+            </section>
+        );
+    },
+    extra: ({ subscriptions }) => {
+        const extra = subscriptions.find((s) => s.id === "extra");
+        if (!extra) return null;
+        return (
+            <section
+                id="extra"
+                data-testid="extra-section"
+                className="bg-white/60 border-y border-[hsl(var(--brand-ink))]/10"
+            >
+                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+                    <SectionHeader
+                        eyebrow="الاشتراكات"
+                        title="بلايستيشن بلس إضافي"
+                        description="مكتبة أوسع تتجاوز ٤٠٠ لعبة من Sony وشركاء آخرين، بسعر يستاهل."
+                        accent="red"
+                    />
+                    <div className="grid md:grid-cols-2 gap-6 sm:gap-8 stagger">
+                        <FeatureHighlight
+                            title="ليش الاشتراك الإضافي؟"
+                            bullets={[
+                                "مكتبة ضخمة من الألعاب الكبرى",
+                                "ألعاب PS4 و PS5 ضمن المكتبة",
+                                "تجارب لعب لاستخدام محدود",
+                                "كل مزايا الاشتراك الأساسي",
+                            ]}
+                            accent="red"
+                        />
+                        <SubscriptionCard sub={extra} />
+                    </div>
+                </div>
+            </section>
+        );
+    },
+    comparison: () => <ComparisonTable />,
+    bundles: () => <Bundles />,
+    bundleBuilder: () => <BundleBuilder />,
+    games: ({ games, store }) => (
+        <section
+            id="games"
+            data-testid="games-section"
+            className="bg-white/60 border-y border-[hsl(var(--brand-ink))]/10"
+        >
+            <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 sm:mb-12">
+                    <SectionHeader
+                        eyebrow="ألعاب رقمية"
+                        title="أبرز الألعاب المتاحة"
+                        description="اضغط على أي لعبة لرؤية تفاصيلها الكاملة — تريلر، مواصفات، وألعاب مشابهة."
+                    />
+                    <div className="shrink-0">
+                        <CompareButton />
+                    </div>
+                </div>
+                <div
+                    data-testid="games-grid"
+                    className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 stagger"
+                >
+                    {games.map((g) => (
+                        <GameCard key={g.id} game={g} />
+                    ))}
+                </div>
+
+                <div className="mt-12 rounded-3xl bg-[hsl(var(--brand-blue-deep))] text-[hsl(var(--brand-cream))] p-8 sm:p-12 relative overflow-hidden">
+                    <div className="absolute -top-8 -right-8 w-44 h-44 keffiyeh-pattern opacity-30 rotate-12" />
+                    <div className="relative grid md:grid-cols-[1fr_auto] items-center gap-6">
+                        <div>
+                            <h3 className="text-2xl sm:text-3xl font-bold leading-tight">
+                                لعبة محددة بدّك إياها وما لقيتها هون؟
+                            </h3>
+                            <p className="opacity-85 mt-2 text-sm sm:text-base">
+                                احكينا على واتساب وراح نأمنّها لك بأفضل سعر.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => quickInquiry("أبحث عن لعبة محددة، هل تتوفر؟", store)}
+                            data-testid="cta-custom-game"
+                            className="inline-flex items-center justify-center gap-2 rounded-full px-6 h-12 bg-[#25D366] text-white font-semibold hover:bg-[#1DA851] transition-colors w-fit"
+                        >
+                            <MessageCircle className="w-4 h-4 wa-pulse" />
+                            اطلب لعبة مخصصة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    ),
+    reviews: () => <Reviews />,
+    faq: () => <FAQ />,
+};
+
 function HomePage() {
     const [cartOpen, setCartOpen] = useState(false);
-    const { subscriptions, games, store, loading } = useStoreData();
-    const { t } = useLang();
+    const { subscriptions, games, store, sections, loading } = useStoreData();
 
-    const essential = subscriptions.find((s) => s.id === "essential");
-    const extra = subscriptions.find((s) => s.id === "extra");
-
-    // Handle shared product link: ?p=game-{id} → scroll to it
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const p = params.get("p");
@@ -61,11 +171,13 @@ function HomePage() {
             <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--brand-cream))]">
                 <div className="text-center">
                     <div className="w-12 h-12 mx-auto border-4 border-[hsl(var(--brand-blue-deep))] border-t-transparent rounded-full animate-spin mb-3" />
-                    <p className="text-sm text-[hsl(var(--brand-ink))]/60">Loading…</p>
+                    <p className="text-sm text-[hsl(var(--brand-ink))]/60">جاري التحميل…</p>
                 </div>
             </div>
         );
     }
+
+    const visibleSections = (sections || []).filter((s) => s.visible !== false);
 
     return (
         <div
@@ -76,139 +188,27 @@ function HomePage() {
             <Hero />
             <Ticker />
 
-            {/* Personal recommender */}
-            <Recommender />
-
-            {/* Essential subscriptions */}
-            {essential && (
-                <section
-                    id="essential"
-                    data-testid="essential-section"
-                    className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20"
-                >
-                    <SectionHeader
-                        eyebrow={t("section.subscriptions")}
-                        title={t("section.essentialTitle")}
-                        description={t("section.essentialDesc")}
+            {visibleSections.map((s) => {
+                const Renderer = SECTION_RENDERERS[s.id];
+                if (!Renderer) return null;
+                return (
+                    <Renderer
+                        key={s.id}
+                        subscriptions={subscriptions}
+                        games={games}
+                        store={store}
                     />
-                    <div className="grid md:grid-cols-2 gap-6 sm:gap-8 stagger">
-                        <SubscriptionCard sub={essential} />
-                        <FeatureHighlight
-                            title={t("feature.essentialTitle")}
-                            bullets={[t("feature.essential.b1"), t("feature.essential.b2")]}
-                        />
-                    </div>
-                </section>
-            )}
-
-            {/* Extra subscriptions */}
-            {extra && (
-                <section
-                    id="extra"
-                    data-testid="extra-section"
-                    className="bg-white/60 border-y border-[hsl(var(--brand-ink))]/10"
-                >
-                    <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
-                        <SectionHeader
-                            eyebrow={t("section.subscriptions")}
-                            title={t("section.extraTitle")}
-                            description={t("section.extraDesc")}
-                            accent="red"
-                        />
-                        <div className="grid md:grid-cols-2 gap-6 sm:gap-8 stagger">
-                            <FeatureHighlight
-                                title={t("feature.extraTitle")}
-                                bullets={[
-                                    t("feature.extra.b1"),
-                                    t("feature.extra.b2"),
-                                    t("feature.extra.b3"),
-                                    t("feature.extra.b4"),
-                                ]}
-                                accent="red"
-                            />
-                            <SubscriptionCard sub={extra} />
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* Savings Calculator */}
-            <SavingsCalculator />
-
-            {/* Comparison */}
-            <ComparisonTable />
-
-            {/* Pre-made Bundles */}
-            <Bundles />
-
-            {/* Build Your Own Bundle */}
-            <BundleBuilder />
-
-            {/* Games */}
-            <section
-                id="games"
-                data-testid="games-section"
-                className="bg-white/60 border-y border-[hsl(var(--brand-ink))]/10"
-            >
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 sm:mb-12">
-                        <SectionHeader
-                            eyebrow={t("section.gamesEyebrow")}
-                            title={t("section.gamesTitle")}
-                            description={t("section.gamesDesc")}
-                        />
-                        <div className="shrink-0">
-                            <CompareButton />
-                        </div>
-                    </div>
-                    <div
-                        data-testid="games-grid"
-                        className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 stagger"
-                    >
-                        {games.map((g) => (
-                            <GameCard key={g.id} game={g} />
-                        ))}
-                    </div>
-
-                    <div className="mt-12 rounded-3xl bg-[hsl(var(--brand-blue-deep))] text-[hsl(var(--brand-cream))] p-8 sm:p-12 relative overflow-hidden">
-                        <div className="absolute -top-8 -right-8 w-44 h-44 keffiyeh-pattern opacity-30 rotate-12" />
-                        <div className="relative grid md:grid-cols-[1fr_auto] items-center gap-6">
-                            <div>
-                                <h3 className="text-2xl sm:text-3xl font-bold leading-tight">
-                                    {t("cta.customGameTitle")}
-                                </h3>
-                                <p className="opacity-85 mt-2 text-sm sm:text-base">
-                                    {t("cta.customGameDesc")}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => quickInquiry(t("cta.customGameButton"), store)}
-                                data-testid="cta-custom-game"
-                                className="inline-flex items-center justify-center gap-2 rounded-full px-6 h-12 bg-[#25D366] text-white font-semibold hover:bg-[#1DA851] transition-colors w-fit"
-                            >
-                                <MessageCircle className="w-4 h-4 wa-pulse" />
-                                {t("cta.customGameButton")}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Reviews */}
-            <Reviews />
-
-            {/* FAQ */}
-            <FAQ />
+                );
+            })}
 
             <Footer />
 
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
 
-            {/* Floating WhatsApp button */}
             <button
-                onClick={() => quickInquiry(t("hero.cta.whatsapp"), store)}
+                onClick={() => quickInquiry("الاستفسار العام عن المنتجات", store)}
                 data-testid="floating-whatsapp"
-                aria-label="WhatsApp"
+                aria-label="تواصل عبر واتساب"
                 className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-[#25D366] text-white shadow-2xl shadow-[#25D366]/40 flex items-center justify-center hover:bg-[#1DA851] transition-colors wa-pulse"
             >
                 <MessageCircle className="w-6 h-6" />
@@ -238,6 +238,7 @@ function App() {
                                     toastOptions={{
                                         style: {
                                             fontFamily: "'Tajawal', sans-serif",
+                                            direction: "rtl",
                                             textAlign: "right",
                                         },
                                     }}

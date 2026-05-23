@@ -72,35 +72,19 @@ export default function StoreSettingsTab({ onSaved }) {
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="اسم المتجر (عربي)">
+                <Field label="اسم المتجر">
                     <Input
                         data-testid="store-name-input"
                         value={form.name || ""}
                         onChange={(e) => set("name", e.target.value)}
                     />
                 </Field>
-                <Field label="اسم المتجر (English)">
-                    <Input
-                        data-testid="store-name-en-input"
-                        value={form.name_en || ""}
-                        onChange={(e) => set("name_en", e.target.value)}
-                        dir="ltr"
-                    />
-                </Field>
 
-                <Field label="الشعار/التاجلاين (عربي)">
+                <Field label="الشعار/التاجلاين">
                     <Input
                         data-testid="store-tagline-input"
                         value={form.tagline || ""}
                         onChange={(e) => set("tagline", e.target.value)}
-                    />
-                </Field>
-                <Field label="Tagline (English)">
-                    <Input
-                        data-testid="store-tagline-en-input"
-                        value={form.tagline_en || ""}
-                        onChange={(e) => set("tagline_en", e.target.value)}
-                        dir="ltr"
                     />
                 </Field>
 

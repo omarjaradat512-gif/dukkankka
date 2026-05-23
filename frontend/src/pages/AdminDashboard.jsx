@@ -9,6 +9,7 @@ import StoreSettingsTab from "../components/admin/StoreSettingsTab";
 import SubscriptionsTab from "../components/admin/SubscriptionsTab";
 import GamesTab from "../components/admin/GamesTab";
 import BundlesTab from "../components/admin/BundlesTab";
+import SectionsTab from "../components/admin/SectionsTab";
 
 export default function AdminDashboard() {
     const { user, loading, logout } = useAuth();
@@ -86,40 +87,50 @@ export default function AdminDashboard() {
                 <Tabs value={tab} onValueChange={setTab} className="w-full">
                     <TabsList
                         data-testid="admin-tabs"
-                        className="w-full grid grid-cols-2 sm:grid-cols-4 gap-1 bg-white/70 border border-[hsl(var(--brand-ink))]/10 rounded-2xl p-1 h-auto"
+                        className="w-full grid grid-cols-2 sm:grid-cols-5 gap-1 bg-white/70 border border-[hsl(var(--brand-ink))]/10 rounded-2xl p-1 h-auto"
                     >
                         <TabsTrigger
                             value="store"
                             data-testid="tab-store"
                             className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
                         >
-                            {t("admin.tab.store")}
+                            إعدادات المتجر
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="sections"
+                            data-testid="tab-sections"
+                            className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
+                        >
+                            ترتيب الأقسام
                         </TabsTrigger>
                         <TabsTrigger
                             value="subscriptions"
                             data-testid="tab-subscriptions"
                             className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
                         >
-                            {t("admin.tab.subscriptions")}
+                            الاشتراكات
                         </TabsTrigger>
                         <TabsTrigger
                             value="games"
                             data-testid="tab-games"
                             className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
                         >
-                            {t("admin.tab.games")}
+                            الألعاب
                         </TabsTrigger>
                         <TabsTrigger
                             value="bundles"
                             data-testid="tab-bundles"
                             className="data-[state=active]:bg-[hsl(var(--brand-ink))] data-[state=active]:text-[hsl(var(--brand-cream))] rounded-xl py-2.5 font-bold"
                         >
-                            {t("admin.tab.bundles")}
+                            الباقات
                         </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="store" className="mt-6">
                         <StoreSettingsTab onSaved={reload} />
+                    </TabsContent>
+                    <TabsContent value="sections" className="mt-6">
+                        <SectionsTab onChanged={reload} />
                     </TabsContent>
                     <TabsContent value="subscriptions" className="mt-6">
                         <SubscriptionsTab onChanged={reload} />

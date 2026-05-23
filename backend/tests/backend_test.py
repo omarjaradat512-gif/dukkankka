@@ -296,3 +296,74 @@ class TestAdminBundlesCRUD:
         assert r.status_code == 200
         items = session.get(f"{API}/bundles", timeout=30).json()
         assert not any(b["id"] == bid for b in items)
+
+
+# ---------------------------------------------------------------------------
+# Sections — homepage section order/visibility
+# ---------------------------------------------------------------------------
+DEFAULT_SECTION_IDS = [
+    "recommender", "essential", "extra", "comparison",
+    "bundles", "bundleBuilder", "games", "reviews", "faq",
+]
+
+
+class TestSections:
+    def test_get_sections_default_or_persisted(self, session):
+        r = session.get(f"{API}/sections", timeout=30)
+        assert r.status_code == 200
+        items = r.json()
+        assert isinstance(items, list) and len(items) == 9
+        ids = [s["id"] for s in items]
+        assert sorted(ids) == sorted(DEFAULT_SECTION_IDS)
+        for s in items:
+            assert "id" in s and "visible" in s
+            assert isinstance(s["visible"], bool)
+
+    def test_update_sections_unauthenticated(self):
+        r = requests.put(f"{API}/admin/sections", json={"sections": []}, timeout=30)
+        assert r.status_code == 401
+
+    def test_reorder_and_toggle_visibility_persists(self, session, auth_headers):
+        # Build a reordered + hidden payload
+        reordered = [
+            {"id": "faq", "label": "الأسئلة الشائعة", "visible": True},
+            {"id": "recommender", "label": "مساعدك", "visible": False},
+            {"id": "essential", "label": "الأساسي", "visible": True},
+            {"id": "extra", "label": "الإضافي", "visible": True},
+            {"id": "comparison", "label": "مقارنة", "visible": True},
+            {"id": "bundles", "label": "باقات", "visible": True},
+            {"id": "bundleBuilder", "label": "ابني", "visible": True},
+            {"id": "games", "label": "ألعاب", "visible": True},
+            {"id": "reviews", "label": "آراء", "visible": True},
+        ]
+        try:
+            r = session.put(f"{API}/admin/sections", json={"sections": reordered},
+                            headers=auth_headers, timeout=30)
+            assert r.status_code == 200, r.text
+            data = r.json()
+            assert isinstance(data, list) and len(data) == 9
+            assert data[0]["id"] == "faq"
+            assert data[1]["id"] == "recommender" and data[1]["visible"] is False
+
+            # Verify persistence via public GET
+            r2 = session.get(f"{API}/sections", timeout=30)
+            assert r2.status_code == 200
+            persisted = r2.json()
+            assert [s["id"] for s in persisted] == [s["id"] for s in reordered]
+            rec = next(s for s in persisted if s["id"] == "recommender")
+            assert rec["visible"] is False
+        finally:
+            # Reset to default
+            default_payload = [
+                {"id": sid, "label": "", "visible": True} for sid in DEFAULT_SECTION_IDS
+            ]
+            session.put(f"{API}/admin/sections", json={"sections": default_payload},
+                        headers=auth_headers, timeout=30)
+
+    def test_sections_reset_to_default(self, session):
+        # After previous teardown, ordering should match defaults
+        r = session.get(f"{API}/sections", timeout=30)
+        assert r.status_code == 200
+        ids = [s["id"] for s in r.json()]
+        assert ids == DEFAULT_SECTION_IDS
+        assert all(s["visible"] is True for s in r.json())

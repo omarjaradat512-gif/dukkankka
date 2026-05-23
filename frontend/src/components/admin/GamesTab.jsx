@@ -249,14 +249,17 @@ export default function GamesTab({ onChanged }) {
 
 function GameEditor({ creating, busy, form, setForm, onSave, onCancel }) {
     const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+    const previewName = form.name || "اسم اللعبة";
+    const previewPriceTxt = form.five ? `$${form.five}` : form.four ? `$${form.four}` : "—";
+
     return (
         <div
             data-testid="game-editor"
-            className="rounded-2xl bg-[hsl(var(--brand-ink))] text-[hsl(var(--brand-cream))] p-5 sm:p-6 shadow-2xl"
+            className="rounded-3xl bg-[hsl(var(--brand-ink))] text-[hsl(var(--brand-cream))] p-5 sm:p-7 shadow-2xl"
         >
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg">
-                    {creating ? "إضافة لعبة جديدة" : `تعديل ${form.name}`}
+            <div className="flex items-center justify-between mb-5">
+                <h3 className="font-bold text-lg sm:text-xl">
+                    {creating ? "إضافة لعبة جديدة" : `تعديل: ${form.name || form.id}`}
                 </h3>
                 <button
                     onClick={onCancel}
@@ -267,100 +270,217 @@ function GameEditor({ creating, busy, form, setForm, onSave, onCancel }) {
                 </button>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Field label="المعرّف (ID) — فريد، إنجليزي">
-                    <Input
-                        data-testid="game-id-input"
-                        value={form.id}
-                        onChange={(e) => set("id", e.target.value)}
-                        disabled={!creating}
-                        dir="ltr"
-                    />
-                </Field>
-                <Field label="اسم اللعبة">
-                    <Input
-                        data-testid="game-name-input"
-                        value={form.name}
-                        onChange={(e) => set("name", e.target.value)}
-                        dir="ltr"
-                    />
-                </Field>
-                <Field label="وصف قصير (sub-title)">
-                    <Input
-                        data-testid="game-sub-input"
-                        value={form.sub}
-                        onChange={(e) => set("sub", e.target.value)}
-                        dir="ltr"
-                    />
-                </Field>
+            <div className="grid lg:grid-cols-[1fr_280px] gap-6">
+                {/* Left: form (3 sections) */}
+                <div className="space-y-6">
+                    {/* Section 1: Basic info */}
+                    <EditorSection
+                        number="1"
+                        title="معلومات اللعبة الأساسية"
+                        hint="الاسم والوصف اللي يظهرو للعميل في بطاقة اللعبة."
+                    >
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <Field
+                                label="المعرّف (ID) ⚠️ مهم — حروف إنجليزية فقط، بدون مسافات"
+                                hint="مثال: eafc26  أو  forza5  (يُستخدم في الرابط، لا يمكن تغييره بعد الإنشاء)"
+                            >
+                                <Input
+                                    data-testid="game-id-input"
+                                    value={form.id}
+                                    onChange={(e) => set("id", e.target.value.toLowerCase().replace(/\s/g, "-"))}
+                                    disabled={!creating}
+                                    dir="ltr"
+                                    placeholder="eafc26"
+                                />
+                            </Field>
+                            <Field
+                                label="اسم اللعبة (كامل)"
+                                hint="الاسم الرسمي للعبة كما يعرفه اللاعبون"
+                            >
+                                <Input
+                                    data-testid="game-name-input"
+                                    value={form.name}
+                                    onChange={(e) => set("name", e.target.value)}
+                                    dir="ltr"
+                                    placeholder="EA Sports FC 26"
+                                />
+                            </Field>
+                            <div className="sm:col-span-2">
+                                <Field
+                                    label="وصف قصير (التصنيف/النوع)"
+                                    hint="سطر واحد يصف نوع اللعبة (يظهر تحت الاسم في البطاقة)"
+                                >
+                                    <Input
+                                        data-testid="game-sub-input"
+                                        value={form.sub}
+                                        onChange={(e) => set("sub", e.target.value)}
+                                        dir="ltr"
+                                        placeholder="مثال: Football • Career & Ultimate Team"
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    </EditorSection>
 
-                <Field label="رابط صورة الغلاف">
-                    <Input
-                        data-testid="game-image-input"
-                        value={form.image}
-                        onChange={(e) => set("image", e.target.value)}
-                        dir="ltr"
-                        placeholder="/games/file.jpg أو https://..."
-                    />
-                </Field>
-                <Field label="سعر PS4 ($)" hint="فاضي = غير متوفر">
-                    <Input
-                        data-testid="game-four-input"
-                        value={form.four}
-                        onChange={(e) => set("four", e.target.value)}
-                        inputMode="decimal"
-                        dir="ltr"
-                    />
-                </Field>
-                <Field label="سعر PS5 ($)" hint="فاضي = غير متوفر">
-                    <Input
-                        data-testid="game-five-input"
-                        value={form.five}
-                        onChange={(e) => set("five", e.target.value)}
-                        inputMode="decimal"
-                        dir="ltr"
-                    />
-                </Field>
+                    {/* Section 2: Pricing & availability */}
+                    <EditorSection
+                        number="2"
+                        title="الأسعار والتوفّر"
+                        hint="حدّد سعر كل جهاز. اترك الحقل فارغاً إذا اللعبة غير متوفرة على ذلك الجهاز."
+                    >
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <Field
+                                label="سعر PS4 بالدولار ($)"
+                                hint="مثال: 16  •  اتركه فارغاً = اللعبة غير متوفرة على PS4"
+                            >
+                                <Input
+                                    data-testid="game-four-input"
+                                    value={form.four}
+                                    onChange={(e) => set("four", e.target.value)}
+                                    inputMode="decimal"
+                                    dir="ltr"
+                                    placeholder="—"
+                                />
+                            </Field>
+                            <Field
+                                label="سعر PS5 بالدولار ($)"
+                                hint="مثال: 26  •  اتركه فارغاً = اللعبة غير متوفرة على PS5"
+                            >
+                                <Input
+                                    data-testid="game-five-input"
+                                    value={form.five}
+                                    onChange={(e) => set("five", e.target.value)}
+                                    inputMode="decimal"
+                                    dir="ltr"
+                                    placeholder="—"
+                                />
+                            </Field>
+                        </div>
 
-                <Field label="لون تدرج (من)">
-                    <Input
-                        data-testid="game-gradient-from-input"
-                        value={form.gradientFrom}
-                        onChange={(e) => set("gradientFrom", e.target.value)}
-                        dir="ltr"
-                        placeholder="#1c5e3a"
-                    />
-                </Field>
-                <Field label="لون تدرج (إلى)">
-                    <Input
-                        data-testid="game-gradient-to-input"
-                        value={form.gradientTo}
-                        onChange={(e) => set("gradientTo", e.target.value)}
-                        dir="ltr"
-                        placeholder="#0f2e1c"
-                    />
-                </Field>
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                            <Toggle
+                                checked={form.available}
+                                onChange={(v) => set("available", v)}
+                                testId="game-available-toggle"
+                                label={form.available ? "✓ متوفرة بالمخزون" : "✗ غير متوفرة (مخفية)"}
+                            />
+                            <Toggle
+                                checked={form.bestSeller}
+                                onChange={(v) => set("bestSeller", v)}
+                                testId="game-bestseller-toggle"
+                                label={form.bestSeller ? "⭐ شارة الأكثر مبيعاً" : "بدون شارة"}
+                            />
+                        </div>
+                    </EditorSection>
 
-                <div className="flex items-end gap-2 flex-wrap">
-                    <Toggle
-                        checked={form.available}
-                        onChange={(v) => set("available", v)}
-                        testId="game-available-toggle"
-                        label={form.available ? "متوفرة" : "غير متوفرة"}
-                    />
-                    <Toggle
-                        checked={form.bestSeller}
-                        onChange={(v) => set("bestSeller", v)}
-                        testId="game-bestseller-toggle"
-                        label="الأكثر مبيعاً"
-                    />
+                    {/* Section 3: Visuals */}
+                    <EditorSection
+                        number="3"
+                        title="الصورة والمظهر"
+                        hint="رابط صورة الغلاف. إذا ما توفرت صورة، يظهر تدرّج لوني."
+                    >
+                        <Field
+                            label="رابط صورة الغلاف"
+                            hint="من Steam, Wikipedia, أو رابط صورة عام. للصور المحلية: /games/ملف.jpg"
+                        >
+                            <Input
+                                data-testid="game-image-input"
+                                value={form.image}
+                                onChange={(e) => set("image", e.target.value)}
+                                dir="ltr"
+                                placeholder="/games/eafc26.jpg"
+                            />
+                        </Field>
+
+                        <details className="mt-3">
+                            <summary className="text-xs font-bold opacity-75 cursor-pointer hover:opacity-100">
+                                ⚙️ ألوان متقدمة (للحالة إذا الصورة ما تحمّلت)
+                            </summary>
+                            <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                                <Field label="لون التدرج (من)" hint="لون hex">
+                                    <Input
+                                        data-testid="game-gradient-from-input"
+                                        value={form.gradientFrom}
+                                        onChange={(e) => set("gradientFrom", e.target.value)}
+                                        dir="ltr"
+                                        placeholder="#1c5e3a"
+                                    />
+                                </Field>
+                                <Field label="لون التدرج (إلى)" hint="لون hex">
+                                    <Input
+                                        data-testid="game-gradient-to-input"
+                                        value={form.gradientTo}
+                                        onChange={(e) => set("gradientTo", e.target.value)}
+                                        dir="ltr"
+                                        placeholder="#0f2e1c"
+                                    />
+                                </Field>
+                            </div>
+                        </details>
+                    </EditorSection>
+                </div>
+
+                {/* Right: live preview */}
+                <div className="lg:sticky lg:top-24 self-start">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.15em] opacity-65 mb-2">
+                        معاينة مباشرة
+                    </div>
+                    <div className="rounded-2xl overflow-hidden bg-white shadow-2xl">
+                        <div
+                            className="relative aspect-[3/4]"
+                            style={{
+                                background: `linear-gradient(135deg, ${form.gradientFrom || "#222"} 0%, ${form.gradientTo || "#000"} 100%)`,
+                            }}
+                        >
+                            {form.image && (
+                                <img
+                                    src={form.image}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(e) => (e.currentTarget.style.display = "none")}
+                                />
+                            )}
+                            {!form.available && (
+                                <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] flex items-center justify-center">
+                                    <span className="rounded-full bg-[hsl(var(--brand-red))] text-white text-xs font-extrabold px-4 py-1.5 rotate-[-6deg] shadow">
+                                        غير متوفرة حالياً
+                                    </span>
+                                </div>
+                            )}
+                            {form.available && form.bestSeller && (
+                                <div
+                                    className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold text-[#3a2400] shadow"
+                                    style={{ background: "linear-gradient(135deg,#ffd86b,#f0a500)" }}
+                                >
+                                    ⭐ الأكثر مبيعاً
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-3" dir="rtl">
+                            <div
+                                dir="ltr"
+                                className="font-bold text-sm text-[hsl(var(--brand-ink))] latin-tight leading-snug"
+                            >
+                                {previewName}
+                            </div>
+                            <div className="text-[11px] text-[hsl(var(--brand-ink))]/55 mt-0.5" dir="ltr">
+                                {form.sub || "—"}
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-[hsl(var(--brand-ink))]/10 flex items-center justify-between">
+                                <div className="text-[10px] text-[hsl(var(--brand-ink))]/55">السعر</div>
+                                <div className="text-lg font-extrabold text-[hsl(var(--brand-red))]">
+                                    {previewPriceTxt}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2">
+            <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-end gap-2">
                 <button
                     onClick={onCancel}
-                    className="inline-flex items-center gap-2 rounded-full px-5 h-10 bg-white/10 hover:bg-white/20 text-sm font-bold"
+                    className="inline-flex items-center gap-2 rounded-full px-5 h-11 bg-white/10 hover:bg-white/20 text-sm font-bold"
                 >
                     إلغاء
                 </button>
@@ -368,12 +488,33 @@ function GameEditor({ creating, busy, form, setForm, onSave, onCancel }) {
                     onClick={onSave}
                     disabled={busy}
                     data-testid="game-editor-save"
-                    className="inline-flex items-center gap-2 rounded-full px-6 h-10 bg-[#7CFF8A] text-[hsl(var(--brand-ink))] text-sm font-bold hover:bg-[#9affa6] disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-full px-7 h-11 bg-[#7CFF8A] text-[hsl(var(--brand-ink))] text-sm font-bold hover:bg-[#9affa6] disabled:opacity-50 shadow-xl"
                 >
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    حفظ
+                    {creating ? "إضافة اللعبة" : "حفظ التغييرات"}
                 </button>
             </div>
+        </div>
+    );
+}
+
+function EditorSection({ number, title, hint, children }) {
+    return (
+        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
+            <div className="flex items-start gap-3 mb-3">
+                <span className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#7CFF8A] text-[hsl(var(--brand-ink))] text-sm font-extrabold">
+                    {number}
+                </span>
+                <div>
+                    <h4 className="font-bold text-base">{title}</h4>
+                    {hint && (
+                        <p className="text-[11px] text-[hsl(var(--brand-cream))]/65 mt-0.5 leading-relaxed">
+                            {hint}
+                        </p>
+                    )}
+                </div>
+            </div>
+            <div>{children}</div>
         </div>
     );
 }

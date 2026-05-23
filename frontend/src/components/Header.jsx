@@ -1,14 +1,12 @@
-import { ShoppingBag, Languages } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useStoreData } from "../contexts/DataContext";
-import { useLang, pickLocalized } from "../contexts/LanguageContext";
 import { CurrencySwitcher } from "./CurrencySwitcher";
 
 export const Header = ({ onOpenCart }) => {
     const { totalQty } = useCart();
     const { store } = useStoreData();
-    const { t, lang, toggleLang } = useLang();
-    const storeName = pickLocalized(store, "name", lang);
+    const storeName = store?.name || "دُكانك";
 
     return (
         <header
@@ -33,7 +31,7 @@ export const Header = ({ onOpenCart }) => {
                             {storeName}
                         </div>
                         <div className="text-[11px] sm:text-xs text-[hsl(var(--brand-ink))]/60 -mt-0.5">
-                            {t("header.tagline")}
+                            متجر رقمي
                         </div>
                     </div>
                 </a>
@@ -44,49 +42,39 @@ export const Header = ({ onOpenCart }) => {
                         className="hover:text-[hsl(var(--brand-red))] transition-colors"
                         data-testid="nav-essential"
                     >
-                        {t("nav.essential")}
+                        أساسي
                     </a>
                     <a
                         href="#extra"
                         className="hover:text-[hsl(var(--brand-red))] transition-colors"
                         data-testid="nav-extra"
                     >
-                        {t("nav.extra")}
+                        إضافي
                     </a>
                     <a
                         href="#games"
                         className="hover:text-[hsl(var(--brand-red))] transition-colors"
                         data-testid="nav-games"
                     >
-                        {t("nav.games")}
+                        الألعاب
                     </a>
                     <a
                         href="#reviews"
                         className="hover:text-[hsl(var(--brand-red))] transition-colors"
                         data-testid="nav-reviews"
                     >
-                        {t("nav.reviews")}
+                        التقييمات
                     </a>
                     <a
                         href="#faq"
                         className="hover:text-[hsl(var(--brand-red))] transition-colors"
                         data-testid="nav-faq"
                     >
-                        {t("nav.faq")}
+                        الأسئلة
                     </a>
                 </nav>
 
                 <div className="flex items-center gap-2 sm:gap-3">
-                    <button
-                        onClick={toggleLang}
-                        data-testid="lang-toggle"
-                        aria-label="Toggle language"
-                        title={t("lang.fullToggle")}
-                        className="inline-flex items-center gap-1.5 rounded-full px-3 h-9 sm:h-10 bg-white/70 border border-[hsl(var(--brand-ink))]/15 text-xs sm:text-sm font-bold text-[hsl(var(--brand-ink))] hover:bg-white transition-colors"
-                    >
-                        <Languages className="w-4 h-4" />
-                        <span className="latin-tight">{t("lang.toggle")}</span>
-                    </button>
                     <CurrencySwitcher compact />
                     <button
                         onClick={onOpenCart}
@@ -94,7 +82,7 @@ export const Header = ({ onOpenCart }) => {
                         className="relative inline-flex items-center gap-2 rounded-full px-3 sm:px-5 h-9 sm:h-11 bg-[hsl(var(--brand-blue-deep))] text-[hsl(var(--brand-cream))] text-xs sm:text-sm font-semibold hover:bg-[hsl(var(--brand-ink))] transition-colors"
                     >
                         <ShoppingBag className="w-4 h-4" />
-                        <span className="hidden sm:inline">{t("cart")}</span>
+                        <span className="hidden sm:inline">السلة</span>
                         {totalQty > 0 && (
                             <span
                                 data-testid="cart-badge"

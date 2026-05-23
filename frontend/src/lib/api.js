@@ -42,6 +42,11 @@ export const apiMe = () => client.get("/auth/me").then((r) => r.data);
 // Admin: Store
 export const apiUpdateStore = (data) => client.put("/admin/store", data).then((r) => r.data);
 
+// Admin: Sections
+export const apiGetSections = () => client.get("/sections").then((r) => r.data);
+export const apiUpdateSections = (sections) =>
+    client.put("/admin/sections", { sections }).then((r) => r.data);
+
 // Admin: Subscriptions
 export const apiCreateSubscription = (data) => client.post("/admin/subscriptions", data).then((r) => r.data);
 export const apiUpdateSubscription = (id, data) => client.put(`/admin/subscriptions/${id}`, data).then((r) => r.data);
